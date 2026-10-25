@@ -1,0 +1,27 @@
+name: Build Nevertime Client APK
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'nevertime-android/**'
+      - '.github/workflows/build-nevertime-android.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Build APK
+        working-directory: nevertime-android
+        run: gradle --no-daemon :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nevertime-Client-APK
+          path: nevertime-android/app/build/outputs/apk/debug/app-debug.apk
