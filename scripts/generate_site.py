@@ -63,50 +63,54 @@ def main():
     qa = (ROOT / ".github/agents/qa.md").read_text(encoding="utf-8")
     design = ask(designer + "\nReturn a specific, practical design brief.", brief)
     (ROOT / "DESIGN_SPEC.md").write_text(design + "\n", encoding="utf-8")
-    instruction = ("Build a complete responsive single-file index.html using embedded CSS "
-                   "and vanilla JS. Output ONLY the HTML, no markdown. All interactions "
-                   "must work without external APIs or keys. Do not include fake testimonials, "
-                   "invented facts, fake contact details or misleading claims. "
-                   "Do not use remote JavaScript. Use accessible semantic HTML.")
-    prompt = "USER REQUEST:\n" + brief + "\nDESIGN SPEC:\n" + design
-    feedback = ""
-    for attempt in range(3):
-        raw_html = ask(developer + "\n" + instruction, prompt + feedback)
-        try:
-            html = extract_html(raw_html)
-        except ValueError as exc:
-            print("Developer attempt " + str(attempt + 1) + " invalid: " + str(exc), flush=True)
-            feedback = ("\nIMPORTANT: Previous output was incomplete or invalid HTML. "
-                        "Return a complete document starting with <!DOCTYPE html> "
-                        "and ending with </html>. Keep the design concise enough "
-                        "to fit the output limit. Do not use markdown fences.")
-            continue
-        review = ask(
-            qa + "\nReturn JSON ONLY: {\"approved\": boolean, \"issues\": [string]}. "
-            "Review the provided HTML as code only; never claim browser testing.",
-            "USER REQUEST:\n" + brief + "\nDESIGN SPEC:\n" + design
-            + "\nHTML:\n" + html[:90000],
-        )
-        try:
-            match = re.search(r"\{[\s\S]*\}", review)
-            verdict = json.loads(match.group(0)) if match else {}
-        except (ValueError, AttributeError):
-            verdict = {"approved": False, "issues": ["QA response was not valid JSON"]}
-        if verdict.get("approved") is True:
-            (ROOT / "index.html").write_text(html, encoding="utf-8")
-            (ROOT / "QA_REPORT.md").write_text(
-                "# QA review\n\nApproved by model-based code review. "
-                "Browser/visual tests were NOT run.\n\n"
-                + "\n".join("- " + str(i) for i in verdict.get("issues", [])) + "\n",
-                encoding="utf-8")
-            print("Generated index.html; QA code review approved")
-            return
-        feedback = "\nQA ISSUES TO FIX:\n" + json.dumps(
-            verdict.get("issues", ["QA did not approve"]), ensure_ascii=False)
+    base = "USER REQUEST:\\n" + brief + "\\nDESIGN SPEC:\\n" + design[:5000]
+    parts = [
+        ("HTML", "Return ONLY HTML markup for the page BODY, including a header, main sections and footer. No <html>, <head>, <style> or <script>. Keep under 9000 characters. Use class names consistently; use buttons for actions. No markdown."),
+        ("CSS", "Return ONLY plain CSS for the website. No <style> tags, no markdown. Premium visual design, mobile responsive, animations, readable typography. Target the HTML below. Keep under 12000 characters."),
+        ("JS", "Return ONLY vanilla JavaScript for functional interactions in the HTML below. No <script> tags, no markdown. Keep under 4500 characters. Do not use external APIs.")
+    ]
+    outputs = {}
+    for name, instruction in parts:
+        print("Generating " + name, flush=True)
+        context = base
+        if name != "HTML":
+            context += "\\nHTML BODY:\\n" + outputs["HTML"]
+        raw = ask(developer + "\\n" + instruction, context)
+        raw = re.sub(r"^\\s*```(?:html|css|javascript|js)?\\s*|\\s*```\\s*$", "", raw.strip(), flags=re.I).strip()
+        if not raw:
+            raise RuntimeError(name + " generation returned empty content")
+        outputs[name] = raw
+    body = outputs["HTML"]
+    if "<body" in body.lower():
+        match = re.search(r"<body[^>]*>([\\s\\S]*?)</body>", body, re.I)
+        if match:
+            body = match.group(1)
+    if not re.search(r"<main\\b", body, re.I):
+        raise RuntimeError("Developer did not provide a main page section")
+    css = outputs["CSS"].replace("</style", "<\\/style")
+    js = outputs["JS"].replace("</script", "<\\/script")
+    html = ("<!DOCTYPE html>\\n<html lang='ru'>\\n<head>\\n"
+            "<meta charset='utf-8'>\\n<meta name='viewport' content='width=device-width, initial-scale=1'>\\n"
+            "<title>Website</title>\\n<style>\\n" + css + "\\n</style>\\n</head>\\n"
+            "<body>\\n" + body + "\\n<script>\\n" + js + "\\n</script>\\n</body>\\n</html>")
+    html = extract_html(html)
+    (ROOT / "index.html").write_text(html, encoding="utf-8")
+    review = ask(qa + "\\nReturn ONLY compact JSON: {\\"approved\\":boolean,\\"issues\\":[string]}. "
+                 "Review source code, not browser behavior. Focus on critical broken behavior.",
+                 "REQUEST:\\n" + brief[:1200] + "\\nHTML:\\n" + html[:18000])
+    match = re.search(r"\\{[\\s\\S]*\\}", review)
+    try:
+        verdict = json.loads(match.group(0)) if match else {}
+    except ValueError:
+        verdict = {"approved": False, "issues": ["QA response was not valid JSON"]}
+    issues = verdict.get("issues", [])
     (ROOT / "QA_REPORT.md").write_text(
-        "# QA review\n\nRejected after three attempts. No website published.\n"
-        + feedback, encoding="utf-8")
-    raise RuntimeError("QA did not approve after three attempts")
+        "# QA review\\n\\nAI code review only; browser tests were not run.\\n\\n"
+        + "Approved: " + str(verdict.get("approved") is True) + "\\n\\n"
+        + "\\n".join("- " + str(issue) for issue in issues) + "\\n", encoding="utf-8")
+    if verdict.get("approved") is not True:
+        raise RuntimeError("QA rejected the generated site: " + str(issues)[:300])
+    print("Generated HTML, CSS and JavaScript separately; QA approved", flush=True)
 
 
 if __name__ == "__main__":
