@@ -20,7 +20,7 @@ final class OverlayControls {
     private WindowManager.LayoutParams params(int width,int height){WindowManager.LayoutParams p=new WindowManager.LayoutParams(width,height,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,PixelFormat.TRANSLUCENT);p.gravity=Gravity.TOP|Gravity.LEFT;return p;}
     @android.annotation.SuppressLint({"ClickableViewAccessibility","RtlHardcoded"})
     void attach(){
-        bubble=new ImageButton(context);bubble.setImageResource(R.drawable.ic_nevertime);bubble.setContentDescription("Nevertime N — открыть меню");bubble.setPadding(dp(context,5),dp(context,5),dp(context,5),dp(context,5));bubble.setBackground(surface(context,245));
+        bubble=new ImageButton(context);bubble.setScaleType(ImageView.ScaleType.FIT_CENTER);bubble.setImageResource(R.drawable.ic_nevertime);bubble.setContentDescription("Nevertime N — открыть меню");bubble.setPadding(dp(context,5),dp(context,5),dp(context,5),dp(context,5));bubble.setBackground(surface(context,245));
         bp=params(dp(context,52),dp(context,52));Rect r=area();bp.x=HudMath.position(store.prefs.getFloat("n.x",.92f),r.width(),bp.width);bp.y=HudMath.position(store.prefs.getFloat("n.y",.10f),r.height(),bp.height);
         bubble.setOnClickListener(v->{if(menu==null)open();else close();});
         bubble.setOnTouchListener(new View.OnTouchListener(){float x,y;int ox,oy;boolean moved;
