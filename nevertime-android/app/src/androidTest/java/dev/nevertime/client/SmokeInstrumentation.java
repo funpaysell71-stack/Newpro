@@ -26,18 +26,18 @@ public class SmokeInstrumentation extends Instrumentation {
             tap(a,"Modules");shot("02-modules");tap(a,"HUD Editor");shot("03-editor");tap(a,"Settings");shot("04-settings");tap(a,"PLAY");
             check(android.provider.Settings.canDrawOverlays(getTargetContext()),"Overlay permission granted for test");
             runOnMainSync(()->{store.lock(true);for(String id:SettingsStore.IDS)store.enabled(id,false);getTargetContext().startForegroundService(new Intent(getTargetContext(),OverlayService.class).setAction(OverlayService.SHOW));});SystemClock.sleep(1500);
-            check(OverlayService.running&&OverlayService.controls!=null,"N button starts even with all HUD modules disabled");
-            runOnMainSync(()->OverlayService.controls.buttonView().performClick());SystemClock.sleep(250);check(OverlayService.controls.isMenuOpen(),"N opens ClickGUI");shot("05-clickgui");
-            runOnMainSync(()->find(OverlayService.controls.menuView(),"World").performClick());SystemClock.sleep(250);shot("06-world-unavailable");
-            runOnMainSync(()->find(OverlayService.controls.menuView(),"Visual").performClick());SystemClock.sleep(250);shot("07-visual-unavailable");
-            runOnMainSync(()->find(OverlayService.controls.menuView(),"HUD").performClick());SystemClock.sleep(100);
-            runOnMainSync(()->find(OverlayService.controls.menuView(),"HUD Editor").performClick());SystemClock.sleep(250);check(!store.locked()&&!OverlayService.controls.isMenuOpen(),"Editor unlocks HUD and closes menu");
+            check(OverlayService.running&&OverlayService.controls()!=null,"N button starts even with all HUD modules disabled");
+            runOnMainSync(()->OverlayService.controls().buttonView().performClick());SystemClock.sleep(250);check(OverlayService.controls().isMenuOpen(),"N opens ClickGUI");shot("05-clickgui");
+            runOnMainSync(()->find(OverlayService.controls().menuView(),"World").performClick());SystemClock.sleep(250);shot("06-world-unavailable");
+            runOnMainSync(()->find(OverlayService.controls().menuView(),"Visual").performClick());SystemClock.sleep(250);shot("07-visual-unavailable");
+            runOnMainSync(()->find(OverlayService.controls().menuView(),"HUD").performClick());SystemClock.sleep(100);
+            runOnMainSync(()->find(OverlayService.controls().menuView(),"HUD Editor").performClick());SystemClock.sleep(250);check(!store.locked()&&!OverlayService.controls().isMenuOpen(),"Editor unlocks HUD and closes menu");
             runOnMainSync(()->{for(String id:SettingsStore.IDS)store.enabled(id,true);});SystemClock.sleep(350);shot("08-editing-live-hud");
-            runOnMainSync(()->OverlayService.controls.buttonView().performClick());SystemClock.sleep(200);
-            runOnMainSync(()->find(OverlayService.controls.menuView(),"Save HUD").performClick());SystemClock.sleep(250);check(store.locked(),"Save fixes HUD positions");
-            runOnMainSync(()->{View b=OverlayService.controls.buttonView();long now=SystemClock.uptimeMillis();MotionEvent down=MotionEvent.obtain(now,now,0,10,10,0),move=MotionEvent.obtain(now,now+20,2,90,90,0),up=MotionEvent.obtain(now,now+40,1,90,90,0);b.dispatchTouchEvent(down);b.dispatchTouchEvent(move);b.dispatchTouchEvent(up);down.recycle();move.recycle();up.recycle();});
+            runOnMainSync(()->OverlayService.controls().buttonView().performClick());SystemClock.sleep(200);
+            runOnMainSync(()->find(OverlayService.controls().menuView(),"Save HUD").performClick());SystemClock.sleep(250);check(store.locked(),"Save fixes HUD positions");
+            runOnMainSync(()->{View b=OverlayService.controls().buttonView();long now=SystemClock.uptimeMillis();MotionEvent down=MotionEvent.obtain(now,now,0,10,10,0),move=MotionEvent.obtain(now,now+20,2,90,90,0),up=MotionEvent.obtain(now,now+40,1,90,90,0);b.dispatchTouchEvent(down);b.dispatchTouchEvent(move);b.dispatchTouchEvent(up);down.recycle();move.recycle();up.recycle();});
             check(store.prefs.contains("n.x")&&store.prefs.contains("n.y"),"N drag position persists");
-            runOnMainSync(()->getTargetContext().stopService(new Intent(getTargetContext(),OverlayService.class)));SystemClock.sleep(350);check(!OverlayService.running&&OverlayService.controls==null,"Service removes HUD and controls");
+            runOnMainSync(()->getTargetContext().stopService(new Intent(getTargetContext(),OverlayService.class)));SystemClock.sleep(350);check(!OverlayService.running&&OverlayService.controls()==null,"Service removes HUD and controls");
             result.putString("stream","PASS: "+checks+" Android smoke assertions\n");code=Activity.RESULT_OK;
         }catch(Throwable e){result.putString("stream","FAIL: "+e+"\n"+android.util.Log.getStackTraceString(e));}
         finally{getTargetContext().stopService(new Intent(getTargetContext(),OverlayService.class));store.deleteProfile("smoke-profile");try{store.restore(original);}catch(Exception ignored){}store.prefs.edit().commit();}

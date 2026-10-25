@@ -10,7 +10,7 @@ import android.widget.*;
 public final class Design {
     public static final int BG=0xFF090E18, TEXT=0xFFE6F3FA, MUTED=0xFF91A0B7, CYAN=0xFF78DEEF, PURPLE=0xFFAB9AF5;
     public static int dp(Context c,float n){return Math.round(n*c.getResources().getDisplayMetrics().density);}
-    public static LinearLayout column(Context c){LinearLayout l=new LinearLayout(c);l.setOrientation(1);return l;}
+    public static LinearLayout column(Context c){LinearLayout l=new LinearLayout(c);l.setOrientation(LinearLayout.VERTICAL);return l;}
     public static GradientDrawable surface(Context c,int alpha) {
         GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{Color.argb(alpha,29,43,60),Color.argb(alpha,19,23,39)});
         d.setCornerRadius(dp(c,16));d.setStroke(dp(c,1),0xFF354259);return d;
@@ -56,12 +56,14 @@ public final class Design {
     }
     public static final class Art extends View {
         private final Paint p=new Paint(3);
-        public Art(Context c){super(c);setContentDescription("Nevertime — объёмный логотип N");}
+        private Shader glow; private final Drawable logo;
+        public Art(Context c){super(c);logo=c.getDrawable(R.drawable.ic_nevertime);setContentDescription("Nevertime — объёмный логотип N");}
+        @Override protected void onSizeChanged(int w,int h,int oldw,int oldh){glow=new RadialGradient(w*.5f,h*.5f,Math.max(1,Math.max(w,h)*.6f),new int[]{0xFF173C50,0x0010263C},null,Shader.TileMode.CLAMP);}
         @Override protected void onDraw(Canvas c){
-            float w=getWidth(),h=getHeight();p.setShader(new RadialGradient(w*.5f,h*.5f,Math.max(w,h)*.6f,new int[]{0xFF173C50,0x0010263C},null,Shader.TileMode.CLAMP));c.drawRect(0,0,w,h,p);p.setShader(null);
+            float w=getWidth(),h=getHeight();p.setShader(glow);c.drawRect(0,0,w,h,p);p.setShader(null);
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dp(getContext(),1));p.setColor(0x33547B99);
             for(int n=0;n<3;n++)c.drawCircle(w/2,h/2,Math.min(w,h)*(.25f+n*.1f),p);
-            p.setStyle(Paint.Style.FILL);Drawable logo=getContext().getDrawable(R.drawable.ic_nevertime);int s=(int)(Math.min(w,h)*.68f);logo.setBounds((int)(w-s)/2,(int)(h-s)/2,(int)(w+s)/2,(int)(h+s)/2);logo.draw(c);
+            p.setStyle(Paint.Style.FILL);int s=(int)(Math.min(w,h)*.68f);logo.setBounds((int)(w-s)/2,(int)(h-s)/2,(int)(w+s)/2,(int)(h+s)/2);logo.draw(c);
         }
     }
     public static final class Icon extends Drawable {

@@ -19,7 +19,9 @@ public class OverlayService extends Service implements SharedPreferences.OnShare
     public static final String STOP = "dev.nevertime.client.STOP";
     public static volatile boolean running;
     public static final String SHOW="dev.nevertime.client.SHOW", EDIT="dev.nevertime.client.EDIT";
-    static OverlayControls controls;
+    private OverlayControls controls;
+    private static java.lang.ref.WeakReference<OverlayControls> activeControls=new java.lang.ref.WeakReference<>(null);
+    static OverlayControls controls(){return activeControls.get();}
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Map<String, Widget> widgets = new LinkedHashMap<>();
     private final SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
@@ -71,7 +73,7 @@ public class OverlayService extends Service implements SharedPreferences.OnShare
                 .addAction(new Notification.Action.Builder(null,"Остановить",stop).build()).build();
             if (Build.VERSION.SDK_INT >= 34) startForeground(7,n,ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
             else startForeground(7,n);
-            if (!attached) { controls=new OverlayControls(this,wm,store); controls.attach(); rebuild(); attached = true; handler.post(refresh); }
+            if (!attached) { controls=new OverlayControls(this,wm,store); controls.attach(); activeControls=new java.lang.ref.WeakReference<>(controls); rebuild(); attached = true; handler.post(refresh); }
             running = true;
             store.prefs.edit().remove("last_error").apply();
         } catch (RuntimeException error) { fail("HUD не запущен: " + error.getClass().getSimpleName()); }
@@ -173,7 +175,7 @@ public class OverlayService extends Service implements SharedPreferences.OnShare
     }
     @Override public void onDestroy() {
         running=false; handler.removeCallbacksAndMessages(null); store.prefs.unregisterOnSharedPreferenceChangeListener(this);
-        unregisterReceiver(battery); if(controls!=null){controls.destroy();controls=null;} store.lock(true); removeWidgets(); stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy();
+        unregisterReceiver(battery); if(controls!=null){controls.destroy();controls=null;activeControls.clear();} store.lock(true); removeWidgets(); stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy();
     }
     @Override public IBinder onBind(Intent intent) { return null; }
 }

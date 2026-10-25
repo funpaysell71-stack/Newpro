@@ -23,10 +23,10 @@ public class MainActivity extends Activity {
         state=null;LinearLayout shell=column(this);shell.setBackgroundColor(BG);setContentView(shell);
         shell.setOnApplyWindowInsetsListener((v,i)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets a=i.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime());v.setPadding(a.left,a.top,a.right,a.bottom);}else v.setPadding(i.getSystemWindowInsetLeft(),i.getSystemWindowInsetTop(),i.getSystemWindowInsetRight(),i.getSystemWindowInsetBottom());return i;});shell.requestApplyInsets();
         boolean wide=getResources().getConfiguration().screenWidthDp>=600;
-        LinearLayout row=new LinearLayout(this);row.setOrientation(wide?0:1);shell.addView(row,new LinearLayout.LayoutParams(-1,-1));
+        LinearLayout row=new LinearLayout(this);row.setOrientation(wide?LinearLayout.HORIZONTAL:LinearLayout.VERTICAL);shell.addView(row,new LinearLayout.LayoutParams(-1,-1));
         LinearLayout rail=column(this);rail.setPadding(dp(this,16),dp(this,18),dp(this,16),dp(this,14));rail.setBackgroundColor(0xFF101723);
         if(wide){row.addView(rail,new LinearLayout.LayoutParams(dp(this,188),-1));ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.ic_nevertime);rail.addView(logo,new LinearLayout.LayoutParams(dp(this,44),dp(this,44)));text(rail,"NEVERTIME",18,TEXT);text(rail,"5.0 / PREVIEW",10,CYAN);}else row.addView(rail,new LinearLayout.LayoutParams(-1,-2));
-        LinearLayout links=new LinearLayout(this);links.setOrientation(wide?1:0);rail.addView(links);
+        LinearLayout links=new LinearLayout(this);links.setOrientation(wide?LinearLayout.VERTICAL:LinearLayout.HORIZONTAL);rail.addView(links);
         String[] names={"PLAY","Modules","HUD Editor","Settings"},icons={"play","modules","edit","settings"};
         for(int i=0;i<4;i++){final int next=i;Button b=button(links,names[i],icons[i],page==i,()->{page=next;render();});if(!wide)b.setLayoutParams(new LinearLayout.LayoutParams(0,dp(this,52),1));}
         if(wide){text(rail,"FREE EDITION",10,CYAN);text(rail,"Device HUD + launcher\nИгровой адаптер не подключён",11,MUTED);}

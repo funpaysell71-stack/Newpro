@@ -21,7 +21,7 @@ final class OverlayControls {
     @android.annotation.SuppressLint({"ClickableViewAccessibility","RtlHardcoded"})
     void attach(){
         bubble=new ImageButton(context);bubble.setImageResource(R.drawable.ic_nevertime);bubble.setContentDescription("Nevertime N — открыть меню");bubble.setPadding(dp(context,5),dp(context,5),dp(context,5),dp(context,5));bubble.setBackground(surface(context,245));
-        bp=params(dp(context,52),dp(context,52));Rect r=area();bp.x=HudMath.position(store.prefs.getFloat("n.x",.02f),r.width(),bp.width);bp.y=HudMath.position(store.prefs.getFloat("n.y",.10f),r.height(),bp.height);
+        bp=params(dp(context,52),dp(context,52));Rect r=area();bp.x=HudMath.position(store.prefs.getFloat("n.x",.92f),r.width(),bp.width);bp.y=HudMath.position(store.prefs.getFloat("n.y",.10f),r.height(),bp.height);
         bubble.setOnClickListener(v->{if(menu==null)open();else close();});
         bubble.setOnTouchListener(new View.OnTouchListener(){float x,y;int ox,oy;boolean moved;
             public boolean onTouch(View v,MotionEvent e){switch(e.getActionMasked()){

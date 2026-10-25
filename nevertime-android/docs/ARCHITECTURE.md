@@ -26,3 +26,11 @@ Android separates applications by UID, including native code: [official sandbox 
 `MainActivity` / `Design`: adaptive native launcher, original vector logo, gradients, category navigation, settings and profile UI. `SettingsStore`: SharedPreferences with bounded profile restore. `OverlayService`: foreground specialUse service, device indicators and explicit locked/editor modes. `OverlayControls`: movable N and separate limited-area ClickGUI windows. `Compatibility`: HTTPS metadata only, max 64 KiB, schema validation, cached fallback. No remote executable code.
 
 The overlay cannot provide true acrylic blur of Minecraft; translucent gradient panels approximate the visual style without claiming game renderer integration. HUD Editor controls device widgets only. Game coordinates, 3D chunk contours, projectile models and sky presets are not simulated.
+
+## Audited upstream snapshots
+
+- Launchly: `0d49046d568c3be5cedb4d00085566644d604098`
+- Flarial.Launcher: `4d34c5b9f61a4bd3637f07153be70ac3e5f695d1`
+- dll-oss: `40ad1870efd021138241192894cfbfacef1aefa5`
+
+These are inspected snapshots, not a claim about all private or future Flarial components.
