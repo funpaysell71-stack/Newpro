@@ -1,0 +1,25 @@
+name: Build Bedrock Android pack
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'bedrock-android/**'
+      - '.github/workflows/build-bedrock-android.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate and package
+        run: |
+          python -m json.tool bedrock-android/behavior_pack/manifest.json >/dev/null
+          node --check bedrock-android/behavior_pack/scripts/main.js
+          cd bedrock-android/behavior_pack
+          zip -r "$GITHUB_WORKSPACE/NOVA-Bedrock-Android.mcpack" manifest.json scripts
+          test -s "$GITHUB_WORKSPACE/NOVA-Bedrock-Android.mcpack"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NOVA-Bedrock-Android
+          path: NOVA-Bedrock-Android.mcpack
