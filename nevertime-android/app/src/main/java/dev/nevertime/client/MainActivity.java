@@ -85,7 +85,8 @@ public class MainActivity extends Activity {
         label(body,"Твой экран.\nТвои правила.",32,INK);
         label(body,"Лёгкий HUD и быстрый вход в Minecraft.",14,MUTED);
         LinearLayout hero=card(body);
-        hero.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xFF243B53,0xFF27213E}));
+        GradientDrawable heroBackground=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xFF243B53,0xFF27213E});
+        heroBackground.setCornerRadius(dp(18)); hero.setBackground(heroBackground);
         label(hero,"NEVERTIME / 0.2",11,BLUE);
         liveStatus=label(hero,"Проверка состояния…",18,INK);
         button(hero,"Запустить Minecraft  ↗",true,this::launchMinecraft);

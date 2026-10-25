@@ -5,7 +5,9 @@ import android.content.*;
 import android.os.*;
 import android.view.*;
 import android.widget.*;
-import java.util.concurrent.atomic.AtomicReference;
+import java.io.File;
+import java.io.FileOutputStream;
+import android.graphics.Bitmap;
 
 /** Run on a disposable emulator: adb shell am instrument -w dev.nevertime.client.test/dev.nevertime.client.SmokeInstrumentation */
 public class SmokeInstrumentation extends Instrumentation {
@@ -15,6 +17,7 @@ public class SmokeInstrumentation extends Instrumentation {
     @Override public void onStart() {
         Bundle result=new Bundle();
         Activity activity=null;
+        int resultCode=Activity.RESULT_CANCELED;
         SettingsStore store=new SettingsStore(getTargetContext());
         String original=store.snapshot();
         try {
@@ -28,16 +31,17 @@ public class SmokeInstrumentation extends Instrumentation {
             store.enabled("clock",true);
             activity=startActivitySync(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             waitForIdleSync(); final Activity target=activity;
-            check(activity!=null,"Activity starts");
-            runOnMainSync(() -> click(target,"HUD")); waitForIdleSync();
-            runOnMainSync(() -> click(target,"Профили")); waitForIdleSync();
-            runOnMainSync(() -> click(target,"Игра")); waitForIdleSync();
+            check(activity!=null,"Activity starts"); screenshot("home");
+            runOnMainSync(() -> click(target,"HUD")); waitForIdleSync(); screenshot("hud-settings");
+            runOnMainSync(() -> click(target,"Профили")); waitForIdleSync(); screenshot("profiles");
+            runOnMainSync(() -> click(target,"Игра")); waitForIdleSync(); screenshot("game");
             runOnMainSync(() -> click(target,"Открыть Minecraft")); waitForIdleSync();
             check(!target.isFinishing(),"Missing Minecraft handled without closing activity");
             runOnMainSync(() -> click(target,"Главная")); waitForIdleSync();
             if(android.provider.Settings.canDrawOverlays(getTargetContext())) {
+                runOnMainSync(() -> { for(String id:SettingsStore.IDS)store.enabled(id,true); });
                 runOnMainSync(() -> click(target,"Включить HUD")); SystemClock.sleep(1500);
-                check(OverlayService.running,"Foreground HUD starts");
+                check(OverlayService.running,"Foreground HUD starts"); screenshot("live-hud");
                 runOnMainSync(() -> store.prefs.edit().putBoolean("locked",true).apply()); SystemClock.sleep(300);
                 check(OverlayService.running,"Lock update keeps service alive");
                 runOnMainSync(() -> getTargetContext().stopService(new Intent(getTargetContext(),OverlayService.class))); SystemClock.sleep(300);
@@ -47,15 +51,27 @@ public class SmokeInstrumentation extends Instrumentation {
                 check(!OverlayService.running,"Empty configuration cannot start HUD");
             } else throw new AssertionError("Grant overlay app-op before running integration checks");
             result.putString("stream","PASS: "+checks+" Android smoke assertions\n");
-            finish(Activity.RESULT_OK,result);
+            resultCode=Activity.RESULT_OK;
         } catch(Throwable error) {
             result.putString("stream","FAIL: "+error+"\n"+android.util.Log.getStackTraceString(error));
-            finish(Activity.RESULT_CANCELED,result);
+            resultCode=Activity.RESULT_CANCELED;
         } finally {
             getTargetContext().stopService(new Intent(getTargetContext(),OverlayService.class));
             store.deleteProfile("instrumentation-test");
             try { store.restore(original); } catch(Exception ignored) {}
         }
+        // finish terminates the instrumentation process; restore preferences BEFORE calling it.
+        store.prefs.edit().commit();
+        finish(resultCode,result);
+    }
+    private void screenshot(String name) throws Exception {
+        SystemClock.sleep(250);
+        Bitmap bitmap=getUiAutomation().takeScreenshot();
+        if(bitmap==null)throw new AssertionError("Screenshot unavailable");
+        File folder=new File(getTargetContext().getExternalFilesDir(null),"smoke-screenshots");
+        if(!folder.exists() && !folder.mkdirs())throw new AssertionError("Cannot create screenshot directory");
+        try(FileOutputStream out=new FileOutputStream(new File(folder,name+".png"))) { bitmap.compress(Bitmap.CompressFormat.PNG,100,out); }
+        bitmap.recycle();
     }
     private void click(Activity activity,String text) {
         View view=find(activity.getWindow().getDecorView(),text);

@@ -10,10 +10,10 @@ api=$(adb shell getprop ro.build.version.sdk | tr -d '\r')
 if [ "$api" -ge 33 ]; then adb shell pm grant dev.nevertime.client android.permission.POST_NOTIFICATIONS; fi
 adb logcat -c
 adb shell am instrument -w dev.nevertime.client.test/dev.nevertime.client.SmokeInstrumentation | tee app/build/device-test/instrumentation.txt
-rg_cmd=grep
-$rg_cmd -q 'PASS:' app/build/device-test/instrumentation.txt
+grep -q 'PASS:' app/build/device-test/instrumentation.txt
 adb shell am start -n dev.nevertime.client/.MainActivity
-sleep 2
+sleep 4
 adb exec-out screencap -p > app/build/device-test/home.png
+adb pull /sdcard/Android/data/dev.nevertime.client/files/smoke-screenshots app/build/device-test/
 adb logcat -d > app/build/device-test/logcat.txt
 if grep -q 'FATAL EXCEPTION' app/build/device-test/logcat.txt; then exit 1; fi
