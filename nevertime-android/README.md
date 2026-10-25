@@ -15,18 +15,20 @@ No add-on, behavior pack, resource pack or .mcpack is installed or required. `be
 
 ## Capabilities and honest status
 
-| Capability | Status before device CI | Scope |
+| Capability | Status | Scope |
 |---|---|---|
-| Launcher, original vector N, adaptive dark UI | Built, Not Game-Tested | Java/native Android views; landscape sidebar and portrait navigation |
+| Launcher, original vector N, adaptive dark UI | Working | Java/native Android views; landscape sidebar and portrait navigation |
 | Minecraft detection / PLAY | Built, Not Game-Tested | PackageManager version and ordinary Android launch Intent |
 | Version Manager | Partial | HTTPS GitHub metadata, bounded/validated cached JSON; no native adapter or supported version |
-| Floating N / ClickGUI | Built, Not Game-Tested | Independent Android overlay; saved position; small touch window |
-| Device HUD / editor / profiles | Built, Not Game-Tested | Clock, battery, device RAM, service session, screen Hz (not game FPS); scale, opacity, color, snap, saved profiles |
+| Floating N / ClickGUI | Working | Independent Android overlay; saved position; small touch window |
+| Device HUD / editor / profiles | Working | Clock, battery, device RAM, service session, screen Hz (not game FPS); scale, opacity, color, snap, saved profiles |
 | Performance modes | Built, Not Game-Tested | Device polling interval only: 3 / 1.5 / 0.75 seconds |
 | Coordinates, Chunk Borders, Slime Chunks | Unsupported | No verified player data or world renderer under current constraints |
 | Fullbright, Ender Pearl Trajectory, Custom Sky, Fireflies | Unsupported | No verified graphics/entity/physics integration |
 | Native Core | Not Implemented | An empty NDK library would not provide game access |
 | Client updates | Partial | Opens repository releases; no automatic APK installation |
+
+Working here means verified on the Android 35 emulator; it does not mean tested inside Minecraft or on physical phones.
 
 See [research](docs/ARCHITECTURE.md), [test report](docs/TESTING.md) and [continuation](CONTINUE.md). “Unsupported” describes this architecture and verified evidence, not a claim that every possible authorized future integration is impossible.
 
