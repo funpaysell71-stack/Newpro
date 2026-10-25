@@ -71,7 +71,16 @@ def main():
     prompt = "USER REQUEST:\n" + brief + "\nDESIGN SPEC:\n" + design
     feedback = ""
     for attempt in range(3):
-        html = extract_html(ask(developer + "\n" + instruction, prompt + feedback))
+        raw_html = ask(developer + "\n" + instruction, prompt + feedback)
+        try:
+            html = extract_html(raw_html)
+        except ValueError as exc:
+            print("Developer attempt " + str(attempt + 1) + " invalid: " + str(exc), flush=True)
+            feedback = ("\nIMPORTANT: Previous output was incomplete or invalid HTML. "
+                        "Return a complete document starting with <!DOCTYPE html> "
+                        "and ending with </html>. Keep the design concise enough "
+                        "to fit the output limit. Do not use markdown fences.")
+            continue
         review = ask(
             qa + "\nReturn JSON ONLY: {\"approved\": boolean, \"issues\": [string]}. "
             "Review the provided HTML as code only; never claim browser testing.",
