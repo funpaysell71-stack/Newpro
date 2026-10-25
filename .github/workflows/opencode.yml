@@ -1,0 +1,39 @@
+name: OpenCode website agent
+on:
+  issue_comment:
+    types: [created]
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+jobs:
+  opencode:
+    if: >-
+      (github.event.comment.author_association == 'OWNER' ||
+       github.event.comment.author_association == 'MEMBER' ||
+       github.event.comment.author_association == 'COLLABORATOR') &&
+      (contains(github.event.comment.body, '/oc') ||
+       contains(github.event.comment.body, '/opencode'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run OpenCode
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          model: openrouter/openrouter/free
+          use_github_token: true
+          share: false
+          prompt: |
+            Follow AGENTS.md and the three roles in .github/agents/.
+            You are a website-building team: Designer plans a distinctive visual system;
+            Developer implements the complete working site in repository files;
+            QA checks structure, behavior and accessibility, fixes defects and reports limits.
+            Read the user's GitHub issue and comment for the actual requested site.
+            Work in a branch and propose a pull request, not direct publication to main.
+            Do not use or expose secrets. Do not invent customer claims or testimonials.
