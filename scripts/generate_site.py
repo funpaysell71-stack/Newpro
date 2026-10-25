@@ -95,7 +95,7 @@ def main():
             "<body>\\n" + body + "\\n<script>\\n" + js + "\\n</script>\\n</body>\\n</html>")
     html = extract_html(html)
     (ROOT / "index.html").write_text(html, encoding="utf-8")
-    review = ask(qa + "\\nReturn ONLY compact JSON: {\\"approved\\":boolean,\\"issues\\":[string]}. "
+    review = ask(qa + "\nReturn ONLY compact JSON with keys approved (boolean) and issues (array of strings). "
                  "Review source code, not browser behavior. Focus on critical broken behavior.",
                  "REQUEST:\\n" + brief[:1200] + "\\nHTML:\\n" + html[:18000])
     match = re.search(r"\\{[\\s\\S]*\\}", review)
