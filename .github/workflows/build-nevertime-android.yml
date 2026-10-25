@@ -2,13 +2,13 @@ name: Build Nevertime Client APK
 on:
   workflow_dispatch:
   push:
-    paths: ['nevertime-android/**', 'bedrock-android/**', '.github/workflows/build-nevertime-android.yml']
+    paths: ['nevertime-android/**', '.github/workflows/build-nevertime-android.yml']
   pull_request:
-    paths: ['nevertime-android/**', 'bedrock-android/**', '.github/workflows/build-nevertime-android.yml']
+    paths: ['nevertime-android/**', '.github/workflows/build-nevertime-android.yml']
 permissions:
   contents: read
 concurrency:
-  group: nevertime-${{ github.ref }}
+  group: nevertime-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 jobs:
   build:
@@ -28,19 +28,16 @@ jobs:
       - name: Regression tests
         run: |
           bash nevertime-android/tests/run.sh
-          node --test bedrock-android/tests/*.test.js
-          node --check bedrock-android/behavior_pack/scripts/main.js
-          python -m json.tool bedrock-android/behavior_pack/manifest.json >/dev/null
+          python -m json.tool nevertime-android/app/src/main/assets/compatibility.json >/dev/null
       - name: Compile, lint and package
         working-directory: nevertime-android
         run: bash gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: Nevertime-Client-0.2-debug
+          name: Nevertime-Client-5.0-preview
           if-no-files-found: error
           path: |
             nevertime-android/app/build/outputs/apk/debug/*.apk
-            nevertime-android/app/build/generated/addon/*.mcpack
             nevertime-android/README.md
       - uses: actions/upload-artifact@v4
         if: always()

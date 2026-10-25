@@ -9,6 +9,9 @@ adb shell appops set dev.nevertime.client SYSTEM_ALERT_WINDOW allow
 api=$(adb shell getprop ro.build.version.sdk | tr -d '\r')
 if [ "$api" -ge 33 ]; then adb shell pm grant dev.nevertime.client android.permission.POST_NOTIFICATIONS; fi
 adb logcat -c
+adb shell settings put system accelerometer_rotation 0
+adb shell settings put system user_rotation 1
+sleep 2
 adb shell am instrument -w dev.nevertime.client.test/dev.nevertime.client.SmokeInstrumentation | tee app/build/device-test/instrumentation.txt
 grep -q 'PASS:' app/build/device-test/instrumentation.txt
 adb shell am start -n dev.nevertime.client/.MainActivity

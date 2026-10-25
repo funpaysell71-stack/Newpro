@@ -7,8 +7,8 @@ android {
         applicationId = "dev.nevertime.client"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 500
+        versionName = "5.0.0-preview"
         testInstrumentationRunner = "dev.nevertime.client.SmokeInstrumentation"
     }
     compileOptions {
@@ -17,12 +17,3 @@ android {
     }
     lint { abortOnError = true }
 }
-val packageAddon by tasks.registering(Zip::class) {
-    from("../../bedrock-android/behavior_pack")
-    archiveFileName.set("Nevertime-Bedrock.mcpack")
-    destinationDirectory.set(layout.buildDirectory.dir("generated/addon"))
-    isPreserveFileTimestamps = false
-    isReproducibleFileOrder = true
-}
-android.sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/addon"))
-tasks.named("preBuild") { dependsOn(packageAddon) }

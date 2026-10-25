@@ -18,6 +18,8 @@ import java.util.*;
 public class OverlayService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
     public static final String STOP = "dev.nevertime.client.STOP";
     public static volatile boolean running;
+    public static final String SHOW="dev.nevertime.client.SHOW", EDIT="dev.nevertime.client.EDIT";
+    static OverlayControls controls;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Map<String, Widget> widgets = new LinkedHashMap<>();
     private final SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
@@ -43,7 +45,7 @@ public class OverlayService extends Service implements SharedPreferences.OnShare
             try {
                 for (Widget w: widgets.values()) w.text.setText(reading(w.id));
             } catch (RuntimeException error) { fail("Не удалось обновить HUD: " + error.getClass().getSimpleName()); return; }
-            handler.postDelayed(this,1000);
+            handler.postDelayed(this,store.refreshMillis());
         }
     };
     @Override public void onCreate() {
@@ -57,7 +59,7 @@ public class OverlayService extends Service implements SharedPreferences.OnShare
     @Override public int onStartCommand(Intent intent,int flags,int startId) {
         if (intent != null && STOP.equals(intent.getAction())) { stopSelf(); return START_NOT_STICKY; }
         if (!Settings.canDrawOverlays(this)) { fail("Разрешите отображение поверх приложений"); return START_NOT_STICKY; }
-        if (store.count() == 0) { fail("Сначала включите хотя бы один HUD-модуль"); return START_NOT_STICKY; }
+
         try {
             NotificationManager nm = getSystemService(NotificationManager.class);
             nm.createNotificationChannel(new NotificationChannel("hud","Плавающий HUD",NotificationManager.IMPORTANCE_LOW));
@@ -69,7 +71,7 @@ public class OverlayService extends Service implements SharedPreferences.OnShare
                 .addAction(new Notification.Action.Builder(null,"Остановить",stop).build()).build();
             if (Build.VERSION.SDK_INT >= 34) startForeground(7,n,ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
             else startForeground(7,n);
-            if (!attached) { rebuild(); attached = true; handler.post(refresh); }
+            if (!attached) { controls=new OverlayControls(this,wm,store); controls.attach(); rebuild(); attached = true; handler.post(refresh); }
             running = true;
             store.prefs.edit().remove("last_error").apply();
         } catch (RuntimeException error) { fail("HUD не запущен: " + error.getClass().getSimpleName()); }
@@ -88,7 +90,7 @@ public class OverlayService extends Service implements SharedPreferences.OnShare
     }
     private void rebuild() {
         removeWidgets();
-        if(store.count()==0) { stopSelf(); return; }
+
         for(String id:SettingsStore.IDS) if(store.enabled(id)) {
             Widget w=new Widget(id); widgets.put(id,w); wm.addView(w.text,w.layout);
             w.text.post(() -> { if(widgets.get(id)==w) place(w); });
@@ -124,12 +126,12 @@ public class OverlayService extends Service implements SharedPreferences.OnShare
         final TextView text;
         final WindowManager.LayoutParams layout;
         Widget(String module) {
-            id=module; text=new TextView(OverlayService.this); text.setText(reading(id)); text.setTextColor(0xFFE5F5FF);
-            text.setTextSize(store.size(id)); text.setTypeface(android.graphics.Typeface.create("sans-serif-medium",android.graphics.Typeface.NORMAL));
+            id=module; text=new TextView(OverlayService.this); text.setText(reading(id)); text.setTextColor(store.accent());
+            text.setTextSize(store.size(id)*store.scale()/100f); text.setTypeface(android.graphics.Typeface.create("sans-serif-medium",android.graphics.Typeface.NORMAL));
             text.setPadding(dp(12),dp(9),dp(12),dp(9)); text.setAlpha(store.opacity(id)/100f);
             text.setMaxWidth(Math.max(dp(120),bounds().width()));
             GradientDrawable background=new GradientDrawable(); background.setColor(0xF21A2233); background.setCornerRadius(dp(12));
-            background.setStroke(dp(1),0xFF7384B6); text.setBackground(background);
+            if(store.locked()) background.setStroke(dp(1),store.accent()); else background.setStroke(dp(2),store.accent(),dp(5),dp(3)); text.setBackground(background);
             int flags=WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
             if(store.locked()) flags|=WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
             layout=new WindowManager.LayoutParams(-2,-2,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,flags,PixelFormat.TRANSLUCENT);
@@ -146,6 +148,7 @@ public class OverlayService extends Service implements SharedPreferences.OnShare
                             Rect r=bounds();
                             layout.x=HudMath.clamp(originX+Math.round(event.getRawX()-startX),0,Math.max(0,r.width()-text.getWidth()));
                             layout.y=HudMath.clamp(originY+Math.round(event.getRawY()-startY),0,Math.max(0,r.height()-text.getHeight()));
+                            if(store.snap()){int grid=dp(8);layout.x=HudMath.clamp(Math.round((float)layout.x/grid)*grid,0,Math.max(0,r.width()-text.getWidth()));layout.y=HudMath.clamp(Math.round((float)layout.y/grid)*grid,0,Math.max(0,r.height()-text.getHeight()));}
                             update(Widget.this); return true;
                         case MotionEvent.ACTION_UP:
                         case MotionEvent.ACTION_CANCEL:
@@ -159,18 +162,18 @@ public class OverlayService extends Service implements SharedPreferences.OnShare
     }
     private final Runnable rebuildTask=() -> { if(running) { try { rebuild(); } catch(RuntimeException e) { fail("Не удалось применить настройки HUD"); } } };
     @Override public void onSharedPreferenceChanged(SharedPreferences prefs,String key) {
-        if(key==null || key.equals("locked") || key.equals("layout_revision") || key.endsWith(".enabled") || key.endsWith(".size") || key.endsWith(".opacity")) {
+        if(key==null || key.equals("locked") || key.equals("layout_revision") || key.equals("scale") || key.equals("accent") || key.endsWith(".enabled") || key.endsWith(".size") || key.endsWith(".opacity")) {
             handler.removeCallbacks(rebuildTask); handler.post(rebuildTask);
         }
     }
-    @Override public void onConfigurationChanged(Configuration config) { super.onConfigurationChanged(config); handler.removeCallbacks(rebuildTask); handler.post(rebuildTask); }
+    @Override public void onConfigurationChanged(Configuration config) { super.onConfigurationChanged(config); if(controls!=null)controls.recreate(); handler.removeCallbacks(rebuildTask); handler.post(rebuildTask); }
     private void removeWidgets() {
         for(Widget w:widgets.values()) { try { wm.removeView(w.text); } catch(IllegalArgumentException ignored) { /* Already removed by Android. */ } }
         widgets.clear();
     }
     @Override public void onDestroy() {
         running=false; handler.removeCallbacksAndMessages(null); store.prefs.unregisterOnSharedPreferenceChangeListener(this);
-        unregisterReceiver(battery); removeWidgets(); stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy();
+        unregisterReceiver(battery); if(controls!=null){controls.destroy();controls=null;} store.lock(true); removeWidgets(); stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy();
     }
     @Override public IBinder onBind(Intent intent) { return null; }
 }

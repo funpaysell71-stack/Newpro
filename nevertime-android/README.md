@@ -1,68 +1,43 @@
-# Nevertime Client 0.2
+# Nevertime Client 5.0 Preview
 
-Самостоятельное Android-приложение с HUD поверх установленного Minecraft и отдельным дополнением для HUD внутри мира. Идентификатор: `dev.nevertime.client`. Не является Flarial, не модифицирует Minecraft и не включает его APK или ресурсы.
+Android launcher and device HUD, package `dev.nevertime.client`, Android 8.0+ (API 26), target/compile API 35. Free, no account. This is **not a native Minecraft integration**. No game adapter has been verified under the constraints of unmodified Minecraft, no root and no packs. Game modules are explicitly unavailable, without pretend toggles. The list of verified native Minecraft versions is empty.
 
-## Установка на телефон
+## Install and use
 
-1. Скачайте `app-debug.apk` из артефакта **Nevertime-Client-0.2-debug** в [GitHub Actions](https://github.com/funpaysell71-stack/Newpro/actions/workflows/build-nevertime-android.yml). Распакуйте ZIP артефакта, если скачиваете через GitHub.
-2. Откройте APK на Android 8.0 или новее. Если Android попросит, разрешите установку именно тому приложению, из которого открыли файл. Google Play не требуется для установки Nevertime.
-3. Откройте Nevertime → **Включить HUD** → разрешите отображение поверх приложений → вернитесь и нажмите кнопку ещё раз.
-4. Разрешите уведомления, чтобы кнопка остановки HUD была доступна в шторке. Отказ не блокирует HUD: остановить его можно в Nevertime.
-5. На вкладке **HUD** выберите модули, размеры и прозрачность. Перетащите виджеты пальцем. После расстановки включите **Блокировать касания HUD**, чтобы касания проходили в игру.
-6. Нажмите **Запустить Minecraft**. Игра должна быть установлена отдельно; приложение определяет `com.mojang.minecraftpe`.
-7. Чтобы остановить HUD, используйте кнопку в приложении или уведомлении. После перезагрузки телефона включите HUD вручную.
+1. Download the `Nevertime-Client-5.0-preview` artifact from a successful **Build Nevertime Client APK** GitHub Actions run. Sign in to GitHub if needed, open the ZIP and install `app-debug.apk` on Android. Allow installation from your browser/file manager when prompted.
+2. If Android reports an incompatible signature from an earlier debug build, uninstall that build first (this deletes its local profiles). Debug signing keys may differ between CI runs.
+3. Install your purchased Minecraft through Google Play separately. No Minecraft files are included or downloaded by Nevertime.
+4. Open Nevertime, allow display over other apps for the N button, and optionally allow notifications. Return and press PLAY again. The compatibility dialog honestly reports no native adapter. Choose **Minecraft + меню N** to launch the ordinary installed game with device HUD.
+5. Tap N to open/close HUD / World / Visual / Settings. Drag N to move it. In HUD Editor, move framed device widgets, then choose **Save HUD** to lock them. Locked widgets do not consume touches. N itself remains draggable.
+6. Stop the overlay from its notification or Settings. It can remain over other apps: foreground-app detection is not implemented.
 
-Это тестовая debug-сборка. Сборки в разных окружениях могут иметь разные debug-подписи. Если Android сообщает о конфликте подписи при обновлении, понадобится удалить прежнюю тестовую версию (при этом её настройки удалятся). Для постоянных обновлений нужна отдельная release-подпись; ключи в репозиторий не добавляются.
+No add-on, behavior pack, resource pack or .mcpack is installed or required. `bedrock-android/` is legacy source from the prior approach; version 5.0 does not package or use it.
 
-## Реализовано
+## Capabilities and honest status
 
-- Русскоязычный интерфейс: главная, HUD, профили, игра; графитовые поверхности, голубой/фиолетовый акцент, переходы, прокрутка и системные отступы.
-- Пять самостоятельных HUD-виджетов: часы телефона, заряд/температура батареи, использованная/общая RAM устройства, время работы HUD, частота дисплея в Гц.
-- Включение каждого модуля, поиск, размер 10–26 sp, прозрачность 30–100%, отдельное перетаскивание, ограничение позиций экраном, восстановление относительных позиций после поворота.
-- Настройки через SharedPreferences, до 20 именованных профилей, применение/удаление, сброс позиций. Профили сохраняют модули, размеры, прозрачность, расположение и блокировку.
-- Foreground service с уведомлением и остановкой; проверка разрешений, отказа/отзыва overlay-доступа, отсутствующей игры и ошибок экспорта.
-- Обнаружение установленного Minecraft и отображение его версии, запуск игры стандартным Android Intent.
-- Экспорт встроенного `.mcpack` через системный выбор файла без доступа ко всему хранилищу.
+| Capability | Status before device CI | Scope |
+|---|---|---|
+| Launcher, original vector N, adaptive dark UI | Built, Not Game-Tested | Java/native Android views; landscape sidebar and portrait navigation |
+| Minecraft detection / PLAY | Built, Not Game-Tested | PackageManager version and ordinary Android launch Intent |
+| Version Manager | Partial | HTTPS GitHub metadata, bounded/validated cached JSON; no native adapter or supported version |
+| Floating N / ClickGUI | Built, Not Game-Tested | Independent Android overlay; saved position; small touch window |
+| Device HUD / editor / profiles | Built, Not Game-Tested | Clock, battery, device RAM, service session, screen Hz (not game FPS); scale, opacity, color, snap, saved profiles |
+| Performance modes | Built, Not Game-Tested | Device polling interval only: 3 / 1.5 / 0.75 seconds |
+| Coordinates, Chunk Borders, Slime Chunks | Unsupported | No verified player data or world renderer under current constraints |
+| Fullbright, Ender Pearl Trajectory, Custom Sky, Fireflies | Unsupported | No verified graphics/entity/physics integration |
+| Native Core | Not Implemented | An empty NDK library would not provide game access |
+| Client updates | Partial | Opens repository releases; no automatic APK installation |
 
-Батарея и RAM относятся ко всему телефону. Температура батареи не является температурой CPU. Частота экрана не является FPS Minecraft. При блокировке касаний окна автоматически становятся прозрачнее: суммарная непрозрачность всех HUD-окон остаётся не выше 0.75 даже при их пересечении, чтобы соответствовать Android 12+ touch-through restrictions. Системные/защищённые экраны могут скрывать наложения.
+See [research](docs/ARCHITECTURE.md), [test report](docs/TESTING.md) and [continuation](CONTINUE.md). “Unsupported” describes this architecture and verified evidence, not a claim that every possible authorized future integration is impossible.
 
-## Дополнение для мира
+## Build
 
-На вкладке **Игра** сохраните `Nevertime-Bedrock.mcpack`, затем откройте файл через Minecraft из файлового менеджера. Если менеджер не предлагает Minecraft, используйте другой системный файловый менеджер с действием «Открыть с помощью». Включите набор поведения в настройках своего тестового мира.
+JDK 17, Android SDK platform 35/build-tools 35.0.0, Gradle wrapper 8.9, Android Gradle Plugin 8.7.3.
 
-Меню: `/scriptevent nevertime:menu` от имени игрока (требуются права на эту команду). Также обрабатывается использование компаса; поведение этого события на сенсорном управлении нужно проверить в игре. Если меню не открывается из чата, закройте чат и попробуйте компас.
-
-Дополнение показывает реальные XYZ, направление, измерение, часы мира и горизонтальную скорость в блоках за игровой тик. Настройки игрока сохраняются в dynamic property мира. HUD можно полностью отключить. Строка action bar общая с другими наборами и может конфликтовать с ними. Дополнение не связывается с Android HUD: это два независимых механизма.
-
-## Совместимость и ограничения
-
-- Приложение: min SDK 26 (Android 8.0), compile/target SDK 35; без нативных библиотек, без root, без Accessibility Service, без сетевого разрешения и рекламы.
-- Целевая стабильная игра на дату 25.10.2026 — **Bedrock 26.52**, по [официальному журналу релизов](https://feedback.minecraft.net/hc/en-us/sections/360001186971-Release-Changelogs). Это цель проверки, **не утверждение о выполненном тестировании в Minecraft**.
-- Дополнение: минимальный engine `1.21.90`, стабильные `@minecraft/server` и `@minecraft/server-ui` версии `2.0.0`; без beta API. Совместимость с 26.52 необходимо подтвердить импортом и запуском в мире.
-- Не реализованы: FPS/пинг Minecraft, чтение памяти игры, зум, шейдеры/изменение рендера, произвольные игровые координаты на сторонних серверах, модификация Minecraft APK. Публичные Android API не предоставляют эти данные другому приложению.
-- Это приложение-компаньон, а не замена движку Minecraft и не полная функциональная копия Flarial.
-- HUD виден поверх других разрешающих наложения приложений, а не исключительно Minecraft. Это сознательное поведение без слежения за запущенными приложениями.
-- Производители телефонов могут ограничивать foreground-сервисы. Автоматический старт при загрузке и скрытый перезапуск не используются.
-
-## Воспроизводимая сборка
-
-JDK 17, Android SDK Platform 35 + Build Tools 35.0.0. Gradle 8.9 фиксирован wrapper-ом; Android Gradle Plugin 8.7.3. Укажите `ANDROID_HOME` или локальный `local.properties`.
-
-```bash
+```sh
 cd nevertime-android
 bash tests/run.sh
 bash gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
 ```
 
-APK: `app/build/outputs/apk/debug/app-debug.apk`. Встроенный пакет: `app/build/generated/addon/Nevertime-Bedrock.mcpack`. В CI выполняются дополнительные Node-тесты дополнения и Android instrumentation smoke test. Отчёты и снимок экрана сохраняются отдельными артефактами. Проверка на эмуляторе не заменяет тест Minecraft на телефоне.
-
-## Перед первым игровым тестом
-
-- На реальном телефоне проверить overlay-разрешение, уведомления (разрешить и отказать), повторный старт/стоп, отзыв разрешения и поворот экрана.
-- Проверить перетаскивание/блокировку в Minecraft, крупный системный шрифт, вырезы экрана и жестовую навигацию.
-- Сохранить профиль, закрыть/перезапустить приложение, применить профиль, проверить размеры и позиции.
-- Оставить HUD поверх игры на 20–30 минут: проверить отсутствие остановок, расход батареи и плавность.
-- Импортировать `.mcpack`, проверить все модули, выход/возврат в мир, отдельные настройки двух игроков, конфликт action bar с другими наборами.
-- Проверить минимум Android 8 и Android 16 на устройствах. Не считать версии проверенными только по `minSdk`/`targetSdk`.
-
-Фактические результаты доступных проверок: [TEST_REPORT.md](TEST_REPORT.md). Аудит и решения: [AUDIT.md](AUDIT.md).
+Output: `app/build/outputs/apk/debug/app-debug.apk`. CI additionally runs device instrumentation on an Android 35 emulator and uploads screenshots/logs. No native binary, Minecraft assets, or third-party client code is bundled. The app uses INTERNET only for explicit catalog refresh; settings and profiles remain local. Compatibility metadata cannot activate missing native code.

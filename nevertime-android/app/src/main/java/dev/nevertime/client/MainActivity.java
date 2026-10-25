@@ -1,233 +1,109 @@
 package dev.nevertime.client;
-
 import android.Manifest;
 import android.app.*;
 import android.content.*;
 import android.content.pm.PackageManager;
-import android.content.res.ColorStateList;
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.*;
 import android.provider.Settings;
 import android.text.*;
 import android.view.*;
 import android.widget.*;
-import java.io.*;
-import java.util.Locale;
+import static dev.nevertime.client.Design.*;
 
-@android.annotation.SuppressLint("SetTextI18n") // Russian-only first release; localization is tracked in TEST_REPORT.
 public class MainActivity extends Activity {
-    private static final int BG=0xFF0C1019, CARD=0xFF171E2C, INK=0xFFEEF3FF, MUTED=0xFF9AAAC2, BLUE=0xFF80DEFF, PURPLE=0xFFB4A4FF;
-    private SettingsStore store;
-    private LinearLayout shell, body, nav;
-    private TextView liveStatus;
-    private int tab;
-    private String search="";
+    private SettingsStore store;private LinearLayout body;private int page;private TextView state;private boolean updating;
     private final Handler handler=new Handler(Looper.getMainLooper());
-    private final Runnable statusTick=new Runnable() { public void run() { updateStatus(); handler.postDelayed(this,1000); } };
-    private int dp(float v) { return Math.round(v*getResources().getDisplayMetrics().density); }
-    @Override public void onCreate(Bundle state) {
-        super.onCreate(state); store=new SettingsStore(this);
-        if(state!=null) { tab=state.getInt("tab",0); search=state.getString("search",""); }
-        getWindow().setStatusBarColor(BG); getWindow().setNavigationBarColor(BG);
-        shell=column(); shell.setBackgroundColor(BG); setContentView(shell);
-        shell.setOnApplyWindowInsetsListener((v,insets) -> {
-            if(Build.VERSION.SDK_INT>=30) {
-                android.graphics.Insets i=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime());
-                v.setPadding(i.left,i.top,i.right,i.bottom);
-            } else v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());
-            return insets;
-        });
-        shell.requestApplyInsets();
-        LinearLayout brand=column(); brand.setPadding(dp(24),dp(18),dp(24),dp(10));
-        label(brand,"N / NEVERTIME",21,INK); label(brand,"CLIENT   /   ANDROID",10,BLUE); shell.addView(brand);
-        ScrollView scroll=new ScrollView(this); scroll.setFillViewport(true); scroll.setClipToPadding(false);
-        body=column(); body.setPadding(dp(20),dp(12),dp(20),dp(24)); scroll.addView(body);
-        shell.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-        nav=new LinearLayout(this); nav.setPadding(dp(8),dp(6),dp(8),dp(8)); nav.setBackgroundColor(CARD); shell.addView(nav);
-        render();
+    private final Runnable tick=new Runnable(){public void run(){if(state!=null)state.setText((OverlayService.running?"N MENU / ONLINE":"N MENU / OFFLINE")+"\n"+installed()+"\nNative game integration: unavailable");handler.postDelayed(this,1500);}};
+    @Override public void onCreate(Bundle b){super.onCreate(b);store=new SettingsStore(this);if(b!=null)page=b.getInt("page");render();}
+    @Override protected void onSaveInstanceState(Bundle b){super.onSaveInstanceState(b);b.putInt("page",page);}
+    @Override protected void onResume(){super.onResume();handler.post(tick);}
+    @Override protected void onPause(){handler.removeCallbacks(tick);super.onPause();}
+    private void render(){
+        state=null;LinearLayout shell=column(this);shell.setBackgroundColor(BG);setContentView(shell);
+        shell.setOnApplyWindowInsetsListener((v,i)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets a=i.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout()|WindowInsets.Type.ime());v.setPadding(a.left,a.top,a.right,a.bottom);}else v.setPadding(i.getSystemWindowInsetLeft(),i.getSystemWindowInsetTop(),i.getSystemWindowInsetRight(),i.getSystemWindowInsetBottom());return i;});shell.requestApplyInsets();
+        boolean wide=getResources().getConfiguration().screenWidthDp>=600;
+        LinearLayout row=new LinearLayout(this);row.setOrientation(wide?0:1);shell.addView(row,new LinearLayout.LayoutParams(-1,-1));
+        LinearLayout rail=column(this);rail.setPadding(dp(this,16),dp(this,18),dp(this,16),dp(this,14));rail.setBackgroundColor(0xFF101723);
+        if(wide){row.addView(rail,new LinearLayout.LayoutParams(dp(this,188),-1));ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.ic_nevertime);rail.addView(logo,new LinearLayout.LayoutParams(dp(this,44),dp(this,44)));text(rail,"NEVERTIME",18,TEXT);text(rail,"5.0 / PREVIEW",10,CYAN);}else row.addView(rail,new LinearLayout.LayoutParams(-1,-2));
+        LinearLayout links=new LinearLayout(this);links.setOrientation(wide?1:0);rail.addView(links);
+        String[] names={"PLAY","Modules","HUD Editor","Settings"},icons={"play","modules","edit","settings"};
+        for(int i=0;i<4;i++){final int next=i;Button b=button(links,names[i],icons[i],page==i,()->{page=next;render();});if(!wide)b.setLayoutParams(new LinearLayout.LayoutParams(0,dp(this,52),1));}
+        if(wide){text(rail,"FREE EDITION",10,CYAN);text(rail,"Device HUD + launcher\nИгровой адаптер не подключён",11,MUTED);}
+        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);body=column(this);body.setPadding(dp(this,22),dp(this,20),dp(this,22),dp(this,20));scroll.addView(body);
+        row.addView(scroll,wide?new LinearLayout.LayoutParams(0,-1,1):new LinearLayout.LayoutParams(-1,0,1));
+        switch(page){case 1:modules();break;case 2:editor();break;case 3:settings();break;default:home();}
+        body.setAlpha(.3f);body.animate().alpha(1).setDuration(180).start();
     }
-    @Override protected void onSaveInstanceState(Bundle out) { super.onSaveInstanceState(out); out.putInt("tab",tab); out.putString("search",search); }
-    @Override protected void onResume() { super.onResume(); handler.removeCallbacks(statusTick); handler.post(statusTick); }
-    @Override protected void onPause() { handler.removeCallbacks(statusTick); super.onPause(); }
-    private LinearLayout column() { LinearLayout l=new LinearLayout(this); l.setOrientation(LinearLayout.VERTICAL); return l; }
-    private GradientDrawable bg(int color,int stroke) {
-        GradientDrawable d=new GradientDrawable(); d.setColor(color); d.setCornerRadius(dp(18)); if(stroke!=0)d.setStroke(dp(1),stroke); return d;
+    private void home(){
+        text(body,"YOUR WORLD. YOUR SPACE.",11,CYAN);text(body,"Nevertime Client",32,TEXT);
+        LinearLayout hero=card(body);LinearLayout split=new LinearLayout(this);hero.addView(split);
+        LinearLayout info=column(this);split.addView(info,new LinearLayout.LayoutParams(0,-2,1));text(info,"Готов к новой сессии",21,TEXT);
+        state=text(info,"Проверяем установленную игру…",12,MUTED);
+        if(getResources().getConfiguration().screenWidthDp>=600){Art art=new Art(this);split.addView(art,new LinearLayout.LayoutParams(dp(this,140),dp(this,140)));}
+        button(hero,"PLAY","play",true,this::play);
+        text(hero,"Откроет установленный Minecraft. Игровые модули пока недоступны; системный HUD работает отдельно.",12,MUTED);
+        LinearLayout c=card(body);text(c,"Твой HUD всегда рядом",19,TEXT);text(c,"Меню N, сохранённые профили и показатели устройства. Без дополнительных пакетов, root и изменения игры.",13,MUTED);
+        button(c,"Открыть меню N","modules",false,()->startOverlay(false));button(c,"Version Manager","settings",false,this::versionManager);
     }
-    private TextView label(LinearLayout parent,String text,int size,int color) {
-        TextView view=new TextView(this); view.setText(text); view.setTextSize(size); view.setTextColor(color);
-        view.setLineSpacing(dp(3),1); if(size>=20)view.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
-        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2); lp.bottomMargin=dp(8); parent.addView(view,lp); return view;
+    private String installed(){try{return "Minecraft "+getPackageManager().getPackageInfo("com.mojang.minecraftpe",0).versionName;}catch(PackageManager.NameNotFoundException e){return "Minecraft не установлен";}}
+    private void play(){
+        Intent launch=getPackageManager().getLaunchIntentForPackage("com.mojang.minecraftpe");
+        if(launch==null){new AlertDialog.Builder(this).setTitle("Minecraft не установлен").setMessage("Установи купленную игру из Google Play. Nevertime не содержит Minecraft.").setPositiveButton("Google Play",(d,w)->officialStore()).setNegativeButton("Cancel",null).show();return;}
+        new AlertDialog.Builder(this).setTitle("Minecraft Version Not Supported").setMessage(installed()+"\nSupported: нет проверенных нативных версий\n\nВ APK отсутствует игровой адаптер. Можно запустить обычный Minecraft с системным HUD; Coordinates и World-модули не активируются.")
+            .setPositiveButton("Minecraft + меню N",(d,w)->{if(Settings.canDrawOverlays(this)){startOverlay(false);handler.postDelayed(()->safe(launch),250);}else new AlertDialog.Builder(this).setTitle("Разрешение меню N").setMessage("Для кнопки N нужно разрешение поверх приложений. После выдачи нажми PLAY ещё раз.").setPositiveButton("Разрешить",(x,y)->overlayPermission()).setNegativeButton("Только игра",(x,y)->safe(launch)).show();})
+            .setNeutralButton("Version Manager",(d,w)->versionManager()).setNegativeButton("Cancel",null).show();
     }
-    private LinearLayout card(LinearLayout parent) {
-        LinearLayout l=column(); l.setPadding(dp(18),dp(18),dp(18),dp(14)); l.setBackground(bg(CARD,0xFF273248));
-        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2); lp.bottomMargin=dp(14); parent.addView(l,lp); return l;
+    private void officialStore(){safe(new Intent(Intent.ACTION_VIEW,Uri.parse("https://play.google.com/store/apps/details?id=com.mojang.minecraftpe")));}
+    private void versionManager(){
+        new AlertDialog.Builder(this).setTitle("Version Manager").setMessage(installed()+"\n"+Compatibility.status(this)+"\n\nGoogle Play предлагает доступную официальную версию, а не произвольный downgrade. Обновление каталога не устанавливает нативный адаптер.")
+            .setPositiveButton("Download Compatible Version",(d,w)->new AlertDialog.Builder(this).setTitle("Нет подтверждённой версии").setMessage("Совместимая нативная версия не определена. Можно открыть только официальную страницу игры.").setPositiveButton("Google Play",(a,b)->officialStore()).setNegativeButton("Cancel",null).show())
+            .setNeutralButton("Check Again",(d,w)->{toast(installed());versionManager();}).setNegativeButton("Cancel",null).show();
     }
-    private Button button(LinearLayout parent,String title,boolean primary,Runnable action) {
-        Button b=new Button(this); b.setText(title); b.setAllCaps(false); b.setTextSize(14); b.setTextColor(primary?BG:INK);
-        b.setBackground(bg(primary?BLUE:0xFF26324A,0)); b.setMinHeight(dp(50)); b.setPadding(dp(12),dp(10),dp(12),dp(10));
-        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2); lp.topMargin=dp(8); lp.bottomMargin=dp(5); parent.addView(b,lp);
-        b.setOnClickListener(v -> action.run()); return b;
+    private void overlayPermission(){safe(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+getPackageName())));}
+    private void startOverlay(boolean edit){
+        if(!Settings.canDrawOverlays(this)){new AlertDialog.Builder(this).setTitle("Разрешить меню N").setMessage("Разреши наложение, вернись и нажми кнопку снова. Меню может оставаться поверх других приложений — Nevertime не отслеживает текущую игру.").setPositiveButton("Открыть настройки",(d,w)->overlayPermission()).setNegativeButton("Позже",null).show();return;}
+        if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED&&!store.prefs.getBoolean("notification_asked",false)){store.prefs.edit().putBoolean("notification_asked",true).apply();requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},42);}
+        store.lock(!edit);
+        try{startForegroundService(new Intent(this,OverlayService.class).setAction(edit?OverlayService.EDIT:OverlayService.SHOW));if(edit)toast("Перетащи виджеты. Нажми N → Save HUD для фиксации.");}catch(RuntimeException e){toast("Android не разрешил запуск: "+e.getClass().getSimpleName());}
     }
-    private void render() {
-        liveStatus=null; body.removeAllViews(); nav.removeAllViews();
-        String[] names={"Главная","HUD","Профили","Игра"};
-        for(int i=0;i<names.length;i++) {
-            final int index=i; Button b=new Button(this); b.setText(names[i]); b.setAllCaps(false); b.setTextSize(12);
-            b.setPadding(0,dp(8),0,dp(8)); b.setTextColor(tab==i?BLUE:MUTED); b.setBackground(bg(tab==i?0xFF25364B:CARD,0));
-            nav.addView(b,new LinearLayout.LayoutParams(0,dp(52),1)); b.setOnClickListener(v -> { tab=index; render(); });
-        }
-        switch(tab) { case 1: hud(); break; case 2: profiles(); break; case 3: game(); break; default: home(); }
-        body.setAlpha(.4f); body.animate().alpha(1f).setDuration(180).start(); updateStatus();
+    private void modules(){
+        text(body,"Module library",28,TEXT);text(body,"DEVICE / реальные данные Android",11,CYAN);
+        EditText search=new EditText(this);search.setHint("Поиск модулей");search.setHintTextColor(MUTED);search.setTextColor(TEXT);search.setSingleLine();body.addView(search);
+        LinearLayout list=column(this);body.addView(list);renderModules(list,"");
+        search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void afterTextChanged(Editable e){}public void onTextChanged(CharSequence s,int a,int b,int c){renderModules(list,s.toString());}});
     }
-    private void home() {
-        label(body,"Твой экран.\nТвои правила.",32,INK);
-        label(body,"Лёгкий HUD и быстрый вход в Minecraft.",14,MUTED);
-        LinearLayout hero=card(body);
-        GradientDrawable heroBackground=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xFF243B53,0xFF27213E});
-        heroBackground.setCornerRadius(dp(18)); hero.setBackground(heroBackground);
-        label(hero,"NEVERTIME / 0.2",11,BLUE);
-        liveStatus=label(hero,"Проверка состояния…",18,INK);
-        button(hero,"Запустить Minecraft  ↗",true,this::launchMinecraft);
-        button(hero,"Включить HUD",false,this::startHud);
-        button(hero,"Остановить HUD",false,() -> { stopService(new Intent(this,OverlayService.class)); handler.postDelayed(this::updateStatus,150); });
-        LinearLayout info=card(body); label(info,"Настрой один раз",20,INK);
-        label(info,"Перемещай виджеты пальцем. Размер, прозрачность и положение сохраняются. Перед игрой включи блокировку касаний на вкладке HUD.",14,MUTED);
-        button(info,"Настроить виджеты",false,() -> { tab=1; render(); });
-        label(body,"Данные устройства отделены от данных мира. Игровые координаты доступны через отдельное дополнение.",12,MUTED);
+    private void renderModules(LinearLayout list,String query){list.removeAllViews();String q=query.toLowerCase(java.util.Locale.ROOT).trim();
+        String[] detail={"Локальное время телефона","Заряд и температура батареи, не CPU","Используемая / общая RAM телефона","Время работы сервиса Nevertime","Герцы экрана, не FPS Minecraft"};
+        for(int i=0;i<SettingsStore.IDS.length;i++){String id=SettingsStore.IDS[i],name=SettingsStore.NAMES[i];if(!name.toLowerCase(java.util.Locale.ROOT).contains(q))continue;LinearLayout c=card(list);toggle(c,name,store.enabled(id),on->store.enabled(id,on));text(c,detail[i],12,MUTED);}
+        String[] names={"Coordinates","Chunk Borders","Slime Chunks","Ender Pearl Trajectory","Fullbright","Custom Sky","Fireflies"};
+        for(String name:names)if(name.toLowerCase(java.util.Locale.ROOT).contains(q))unavailable(list,name,"Нет подтверждённого доступа к игровому состоянию или рендерингу. Переключателя, имитирующего работу, здесь нет.");
     }
-    private void updateStatus() {
-        if(liveStatus==null)return;
-        String error=store.prefs.getString("last_error","");
-        liveStatus.setText((OverlayService.running?"● HUD работает":"○ HUD выключен")+"\n"+store.count()+" из 5 модулей включено\n"+
-            (Settings.canDrawOverlays(this)?"Наложение разрешено":"Нужно разрешение на наложение")+"\n"+minecraftVersion()+(error.isEmpty()?"":"\n"+error));
+    private void editor(){
+        text(body,"HUD workspace",28,TEXT);text(body,"В обычном режиме виджеты фиксированы. Редактор меняет только HUD устройства.",13,MUTED);
+        LinearLayout actions=card(body);button(actions,"Edit HUD","edit",true,()->startOverlay(true));button(actions,"Save HUD","settings",false,()->{store.lock(true);toast("Расположение сохранено и зафиксировано");});
+        toggle(actions,"Привязка к сетке 8 dp",store.snap(),v->store.prefs.edit().putBoolean("snap",v).apply());
+        slider(actions,"HUD Scale (%)",store.scale(),75,160,v->store.prefs.edit().putInt("scale",v).apply());
+        button(actions,"Сбросить расположение","back",false,()->{store.resetPositions();store.prefs.edit().putLong("layout_revision",SystemClock.elapsedRealtimeNanos()).apply();toast("Расположение сброшено");});
+        for(String id:SettingsStore.IDS){LinearLayout c=card(body);text(c,SettingsStore.NAMES[java.util.Arrays.asList(SettingsStore.IDS).indexOf(id)],17,TEXT);slider(c,"Размер (sp)",store.size(id),10,26,v->store.prefs.edit().putInt(id+".size",v).apply());slider(c,"Непрозрачность (%)",store.opacity(id),30,100,v->store.prefs.edit().putInt(id+".opacity",v).apply());}
+        profiles();
     }
-    private void startHud() {
-        if(!Settings.canDrawOverlays(this)) {
-            new AlertDialog.Builder(this).setTitle("Разрешение для HUD")
-                .setMessage("Разреши Nevertime отображаться поверх других приложений. Затем вернись и нажми «Включить HUD».")
-                .setPositiveButton("Открыть настройки",(d,w)->safeStart(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+getPackageName()))))
-                .setNegativeButton("Позже",null).show(); return;
-        }
-        if(store.count()==0) { toast("Включи хотя бы один модуль на вкладке HUD"); return; }
-        if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED
-            && !store.prefs.getBoolean("notification_asked",false)) {
-            store.prefs.edit().putBoolean("notification_asked",true).apply(); requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},42);
-        }
-        try { startForegroundService(new Intent(this,OverlayService.class)); handler.postDelayed(this::updateStatus,250); }
-        catch(RuntimeException e) { toast("Не удалось запустить HUD: "+e.getClass().getSimpleName()); }
+    private void profiles(){LinearLayout c=card(body);text(c,"Configuration profiles",20,TEXT);
+        button(c,"Сохранить профиль","settings",true,()->{EditText input=new EditText(this);input.setSingleLine();input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(40)});
+            AlertDialog d=new AlertDialog.Builder(this).setTitle("Имя профиля").setView(input).setPositiveButton("Save",null).setNegativeButton("Cancel",null).create();d.setOnShowListener(v->d.getButton(-1).setOnClickListener(b->{String name=input.getText().toString().trim();if(name.isEmpty()||store.profiles().contains(name)||store.profiles().size()>=20){input.setError("Новое имя, максимум 20 профилей");return;}store.saveProfile(name);d.dismiss();render();}));d.show();});
+        for(String name:store.profiles()){button(c,name,"modules",false,()->new AlertDialog.Builder(this).setTitle(name).setPositiveButton("Применить",(d,w)->{try{store.loadProfile(name);store.prefs.edit().putLong("layout_revision",SystemClock.elapsedRealtimeNanos()).apply();render();}catch(Exception e){toast("Профиль повреждён");}}).setNeutralButton("Удалить",(d,w)->{store.deleteProfile(name);render();}).setNegativeButton("Cancel",null).show());}}
+    private void settings(){text(body,"Control center",28,TEXT);
+        LinearLayout c=card(body);text(c,"Interface",19,TEXT);slider(c,"Непрозрачность панелей (%)",store.panelOpacity(),60,100,v->{store.prefs.edit().putInt("panel_opacity",v).apply();render();});
+        String[] colors={"Arctic Cyan","Iris Purple","Lime"};int[] values={CYAN,PURPLE,0xFFA4E975};for(int i=0;i<3;i++){final int color=values[i];button(c,colors[i],"visual",false,()->{store.prefs.edit().putInt("accent",color).apply();toast("Цвет HUD изменён");});}
+        LinearLayout performance=card(body);text(performance,"Performance",19,TEXT);text(performance,"Частота обновления системного HUD. Не изменяет производительность Minecraft.",12,MUTED);
+        String[] modes={"Low · 3 s","Balanced · 1.5 s","High · 0.75 s"};for(int i=0;i<3;i++){final int n=i;button(performance,modes[i],"settings",store.prefs.getInt("performance",1)==i,()->{store.prefs.edit().putInt("performance",n).apply();render();});}
+        LinearLayout versions=card(body);text(versions,"Version Manager",19,TEXT);text(versions,installed()+"\n"+Compatibility.status(this),12,MUTED);
+        button(versions,"Проверить установленную игру","settings",false,this::versionManager);
+        button(versions,updating?"Обновление…":"Обновить каталог GitHub","world",false,()->{if(updating)return;updating=true;new Thread(()->{String result;try{result=Compatibility.refresh(getApplicationContext());}catch(Exception e){result="Не удалось обновить каталог. Сохранённая информация остаётся доступной.";}final String msg=result;runOnUiThread(()->{updating=false;toast(msg);if(!isFinishing())render();});},"catalog-refresh").start();});
+        button(versions,"Обновления Nevertime","world",false,()->safe(new Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/funpaysell71-stack/Newpro/releases"))));
+        button(body,"Diagnostics","settings",false,()->new AlertDialog.Builder(this).setTitle("Diagnostics").setMessage("Nevertime 5.0.0-preview\nAndroid "+Build.VERSION.RELEASE+" / API "+Build.VERSION.SDK_INT+"\nABI: "+String.join(", ",Build.SUPPORTED_ABIS)+"\n"+installed()+"\nOverlay: "+Settings.canDrawOverlays(this)+"\nService: "+OverlayService.running+"\n"+Compatibility.status(this)+"\n"+store.prefs.getString("last_error","")).setPositiveButton("OK",null).show());
+        button(body,"Остановить меню N и HUD","close",false,()->stopService(new Intent(this,OverlayService.class)));
     }
-    private void hud() {
-        label(body,"Настрой свой HUD",28,INK); label(body,"Каждый виджет можно перемещать отдельно.",14,MUTED);
-        LinearLayout options=card(body);
-        toggle(options,"Блокировать касания HUD",store.locked(),on -> store.prefs.edit().putBoolean("locked",on).apply());
-        label(options,"При блокировке виджеты становятся прозрачнее, чтобы Android пропускал касания в игру. Для перемещения отключи блокировку.",12,MUTED);
-        button(options,"Сбросить расположение",false,() -> { store.resetPositions(); restartIfRunning(); toast("Расположение сброшено"); });
-        EditText field=new EditText(this); field.setSingleLine(true); field.setTextColor(INK); field.setHintTextColor(MUTED);
-        field.setHint("Поиск модулей и настроек"); field.setTextSize(15); field.setPadding(dp(14),dp(8),dp(14),dp(8));
-        field.setBackground(bg(CARD,0xFF34425A)); field.setText(search); body.addView(field,new LinearLayout.LayoutParams(-1,dp(52)));
-        LinearLayout modules=column(); modules.setPadding(0,dp(16),0,0); body.addView(modules);
-        showModules(modules);
-        field.addTextChangedListener(new TextWatcher() {
-            public void beforeTextChanged(CharSequence s,int start,int count,int after) {}
-            public void onTextChanged(CharSequence s,int start,int before,int count) { search=s.toString(); showModules(modules); }
-            public void afterTextChanged(Editable e) {}
-        });
-    }
-    private void showModules(LinearLayout parent) {
-        parent.removeAllViews();
-        String[] descriptions={"Локальное время телефона.","Заряд и температура батареи, не процессора.","Используемая и общая RAM всего устройства.","Время с запуска сервиса HUD, не игровое время.","Текущая частота экрана в Гц. Это не FPS Minecraft."};
-        for(int i=0;i<SettingsStore.IDS.length;i++) {
-            String id=SettingsStore.IDS[i], name=SettingsStore.NAMES[i];
-            if(!(name+" "+descriptions[i]+" размер прозрачность").toLowerCase(Locale.ROOT).contains(search.toLowerCase(Locale.ROOT).trim()))continue;
-            LinearLayout m=card(parent); label(m,"УСТРОЙСТВО / "+String.format(Locale.ROOT,"%02d",i+1),10,PURPLE);
-            toggle(m,name,store.enabled(id),enabled -> store.enabled(id,enabled)); label(m,descriptions[i],12,MUTED);
-            slider(m,"Размер",store.size(id),10,26," sp",value->store.prefs.edit().putInt(id+".size",value).apply());
-            slider(m,"Прозрачность",store.opacity(id),30,100,"%",value->store.prefs.edit().putInt(id+".opacity",value).apply());
-        }
-        if(parent.getChildCount()==0)label(parent,"Ничего не найдено",16,MUTED);
-    }
-    private interface BooleanAction { void accept(boolean value); }
-    private interface IntAction { void accept(int value); }
-    private void toggle(LinearLayout parent,String title,boolean value,BooleanAction action) {
-        Switch s=new Switch(this); s.setText(title); s.setTextSize(16); s.setTextColor(INK); s.setChecked(value); s.setMinHeight(dp(52));
-        s.setPadding(0,dp(6),0,dp(6)); parent.addView(s,new LinearLayout.LayoutParams(-1,-2)); s.setOnCheckedChangeListener((v,on)->action.accept(on));
-    }
-    private void slider(LinearLayout parent,String title,int value,int min,int max,String unit,IntAction action) {
-        TextView caption=label(parent,title+"  "+value+unit,12,MUTED);
-        SeekBar s=new SeekBar(this); s.setContentDescription(title); s.setMax(max-min); s.setProgress(value-min);
-        s.setProgressTintList(ColorStateList.valueOf(BLUE)); s.setThumbTintList(ColorStateList.valueOf(BLUE));
-        parent.addView(s,new LinearLayout.LayoutParams(-1,dp(44)));
-        s.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            public void onProgressChanged(SeekBar bar,int progress,boolean fromUser) { caption.setText(title+"  "+(progress+min)+unit); }
-            public void onStartTrackingTouch(SeekBar bar) {}
-            public void onStopTrackingTouch(SeekBar bar) { action.accept(bar.getProgress()+min); }
-        });
-    }
-    private void profiles() {
-        label(body,"Твои профили",28,INK); label(body,"Модули, позиции, размеры, прозрачность и блокировка касаний — в одном профиле.",14,MUTED);
-        button(body,"+ Сохранить текущий профиль",true,() -> {
-            EditText input=new EditText(this); input.setSingleLine(); input.setHint("Например, Вечер"); input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(40)});
-            AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Новый профиль").setView(input).setPositiveButton("Сохранить",null).setNegativeButton("Отмена",null).create();
-            dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-                String name=input.getText().toString().trim(); if(name.isEmpty()) { input.setError("Укажи название"); return; }
-                if(store.profiles().contains(name)) { input.setError("Это имя уже занято"); return; }
-                if(store.profiles().size()>=20) { input.setError("Максимум 20 профилей"); return; }
-                store.saveProfile(name); dialog.dismiss(); render(); toast("Профиль сохранён");
-            })); dialog.show();
-        });
-        if(store.profiles().isEmpty()) { LinearLayout empty=card(body); label(empty,"Пока без профилей",20,INK); label(empty,"Настрой HUD и сохрани первый набор.",14,MUTED); }
-        for(String name:store.profiles()) {
-            LinearLayout c=card(body); label(c,name,20,INK);
-            button(c,"Применить",false,() -> {
-                try { store.loadProfile(name); restartIfRunning(); toast("Применён: "+name); }
-                catch(org.json.JSONException e) { toast("Профиль повреждён. Текущие настройки сохранены."); }
-            });
-            button(c,"Удалить",false,() -> new AlertDialog.Builder(this).setTitle("Удалить «"+name+"»?")
-                .setPositiveButton("Удалить",(d,w)->{store.deleteProfile(name); render();}).setNegativeButton("Отмена",null).show());
-        }
-    }
-    private void restartIfRunning() {
-        // Force position refresh without restarting the session timer.
-        if(OverlayService.running) store.prefs.edit().putLong("layout_revision",SystemClock.elapsedRealtimeNanos()).apply();
-    }
-    private String minecraftVersion() {
-        try { return "Minecraft "+getPackageManager().getPackageInfo("com.mojang.minecraftpe",0).versionName; }
-        catch(PackageManager.NameNotFoundException e) { return "Minecraft не установлен"; }
-    }
-    private void launchMinecraft() {
-        Intent intent=getPackageManager().getLaunchIntentForPackage("com.mojang.minecraftpe");
-        if(intent==null) { toast("Minecraft не найден. Установи игру из Google Play."); return; } safeStart(intent);
-    }
-    private void game() {
-        label(body,"Minecraft + Nevertime",28,INK);
-        LinearLayout installed=card(body); label(installed,minecraftVersion(),20,INK);
-        label(installed,"Запускается установленная игра. Nevertime не меняет APK Minecraft.",14,MUTED);
-        button(installed,"Открыть Minecraft",true,this::launchMinecraft);
-        LinearLayout addon=card(body); label(addon,"HUD внутри мира",23,INK);
-        label(addon,"Отдельное дополнение: реальные координаты, направление, измерение, время мира и скорость в блоках за игровой тик. Настройки сохраняются для каждого игрока.",14,MUTED);
-        button(addon,"Сохранить дополнение .mcpack",false,() -> safeStart(new Intent(Intent.ACTION_CREATE_DOCUMENT)
-            .addCategory(Intent.CATEGORY_OPENABLE).setType("application/octet-stream").putExtra(Intent.EXTRA_TITLE,"Nevertime-Bedrock.mcpack"),73));
-        label(addon,"1. Сохрани файл.\n2. Открой его через Minecraft из приложения «Файлы».\n3. Включи набор поведения в настройках своего мира.\n4. Используй компас или /scriptevent nevertime:menu.",14,INK);
-        label(addon,"Работает только в мирах, где установлен набор. Не добавляет функции на чужие серверы. HUD дополнения занимает строку action bar и может конфликтовать с другими наборами.",12,MUTED);
-        LinearLayout about=card(body); label(about,"Честно о совместимости",20,INK);
-        label(about,"Android 8.0+ • пакет dev.nevertime.client\nЦелевая версия игры: Bedrock 26.52. Проверка в самой игре ещё требуется. Дополнение использует стабильный Script API 2.0.0.\n\nFPS Minecraft, пинг сервера, зум и изменение рендера недоступны этому приложению через публичные Android API.",13,MUTED);
-    }
-    private void safeStart(Intent intent) { try { startActivity(intent); } catch(ActivityNotFoundException|SecurityException e) { toast("Нет приложения для этого действия"); } }
-    private void safeStart(Intent intent,int code) { try { startActivityForResult(intent,code); } catch(ActivityNotFoundException|SecurityException e) { toast("Системный выбор файла недоступен"); } }
-    @Override protected void onActivityResult(int request,int result,Intent data) {
-        super.onActivityResult(request,result,data);
-        if(request==73 && result==RESULT_OK && data!=null && data.getData()!=null) {
-            Uri uri=data.getData();
-            new Thread(() -> {
-                try(InputStream input=getAssets().open("Nevertime-Bedrock.mcpack"); OutputStream output=getContentResolver().openOutputStream(uri)) {
-                    if(output==null)throw new IOException("No output stream"); byte[] buffer=new byte[8192]; int n;
-                    while((n=input.read(buffer))!=-1)output.write(buffer,0,n);
-                    runOnUiThread(() -> toast("Дополнение сохранено. Открой файл через Minecraft."));
-                } catch(IOException|SecurityException e) { runOnUiThread(() -> toast("Не удалось сохранить дополнение. Попробуй другую папку.")); }
-            },"export-addon").start();
-        }
-    }
-    private void toast(String message) { Toast.makeText(this,message,Toast.LENGTH_LONG).show(); }
+    private void safe(Intent intent){try{startActivity(intent);}catch(ActivityNotFoundException|SecurityException e){toast("Не найдено приложение для этого действия");}}
+    private void toast(String value){Toast.makeText(this,value,Toast.LENGTH_LONG).show();}
 }
