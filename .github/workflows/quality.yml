@@ -1,0 +1,19 @@
+name: Website quality checks
+on:
+  push:
+  pull_request:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check repository structure
+        run: |
+          test -s AGENTS.md
+          test -s .github/agents/designer.md
+          test -s .github/agents/developer.md
+          test -s .github/agents/qa.md
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          while IFS= read -r -d '' file; do node --check "$file"; done < <(find . -type f -name '*.js' -not -path './node_modules/*' -print0)
