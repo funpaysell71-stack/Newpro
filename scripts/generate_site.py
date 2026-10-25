@@ -9,22 +9,21 @@ import urllib.error
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1")
-API_KEY = os.environ.get("OPENAI_API_KEY")
+MODEL = os.environ.get("OPENROUTER_MODEL", "openrouter/free")
+API_KEY = os.environ.get("OPENROUTER_API_KEY")
 MAX_CHARS = 12000
 
 
 def ask(role, prompt):
     if not API_KEY:
-        raise RuntimeError("OPENAI_API_KEY is not set")
+        raise RuntimeError("OPENROUTER_API_KEY is not set")
     payload = json.dumps({
         "model": MODEL,
-        "instructions": role,
-        "input": prompt,
-        "max_output_tokens": 9000,
+        "messages": [{"role": "system", "content": role}, {"role": "user", "content": prompt}],
+        "max_tokens": 9000,
     }).encode("utf-8")
     req = urllib.request.Request(
-        "https://api.openai.com/v1/responses",
+        "https://openrouter.ai/api/v1/chat/completions",
         data=payload,
         headers={"Authorization": "Bearer " + API_KEY,
                  "Content-Type": "application/json"},
@@ -35,14 +34,9 @@ def ask(role, prompt):
             result = json.load(response)
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", "replace")[:500]
-        raise RuntimeError("OpenAI API HTTP " + str(exc.code) + ": " + body) from None
-    parts = []
-    for item in result.get("output", []):
-        if item.get("type") == "message":
-            for block in item.get("content", []):
-                if block.get("type") == "output_text":
-                    parts.append(block.get("text", ""))
-    answer = "\n".join(parts).strip()
+        raise RuntimeError("OpenRouter API HTTP " + str(exc.code) + ": " + body) from None
+    choices = result.get("choices") or []
+    answer = (choices[0].get("message", {}).get("content") or "").strip() if choices else ""
     if not answer:
         raise RuntimeError("Model returned no text; check model access and token limits")
     return answer
