@@ -2,11 +2,14 @@ name: Build Nevertime Client APK
 on:
   workflow_dispatch:
   push:
-    paths:
-      - 'nevertime-android/**'
-      - '.github/workflows/build-nevertime-android.yml'
+    paths: ['nevertime-android/**', 'bedrock-android/**', '.github/workflows/build-nevertime-android.yml']
+  pull_request:
+    paths: ['nevertime-android/**', 'bedrock-android/**', '.github/workflows/build-nevertime-android.yml']
 permissions:
   contents: read
+concurrency:
+  group: nevertime-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,10 +21,47 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
-      - name: Build APK
+        with:
+          packages: platform-tools platforms;android-35 build-tools;35.0.0
+          log-accepted-android-sdk-licenses: false
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Regression tests
+        run: |
+          bash nevertime-android/tests/run.sh
+          node --test bedrock-android/tests/*.test.js
+          node --check bedrock-android/behavior_pack/scripts/main.js
+          python -m json.tool bedrock-android/behavior_pack/manifest.json >/dev/null
+      - name: Compile, lint and package
         working-directory: nevertime-android
-        run: gradle --no-daemon :app:assembleDebug
+        run: bash gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: Nevertime-Client-APK
-          path: nevertime-android/app/build/outputs/apk/debug/app-debug.apk
+          name: Nevertime-Client-0.2-debug
+          if-no-files-found: error
+          path: |
+            nevertime-android/app/build/outputs/apk/debug/*.apk
+            nevertime-android/app/build/generated/addon/*.mcpack
+            nevertime-android/README.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Nevertime-lint
+          path: nevertime-android/app/build/reports/lint-results-debug.*
+      - name: Enable KVM for emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android 35 smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: bash nevertime-android/tests/device-smoke.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Nevertime-device-test
+          path: nevertime-android/app/build/device-test/
