@@ -30,6 +30,8 @@ No add-on, behavior pack, resource pack or .mcpack is installed or required. `be
 
 Working here means verified on the Android 35 emulator; it does not mean tested inside Minecraft or on physical phones.
 
+Latest [Game Bridge investigation](docs/GAME_BRIDGE_AUDIT.md) corrects the earlier sandbox-only conclusion and documents the in-process hosting candidate and blockers.
+
 See [research](docs/ARCHITECTURE.md), [test report](docs/TESTING.md) and [continuation](CONTINUE.md). “Unsupported” describes this architecture and verified evidence, not a claim that every possible authorized future integration is impossible.
 
 ## Build

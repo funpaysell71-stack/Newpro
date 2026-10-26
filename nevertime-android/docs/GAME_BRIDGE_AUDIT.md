@@ -45,6 +45,8 @@
 
 [Документация совместимости](https://docs.levimc.org/LeviLaunchroid/guide/compatibility) заявляет Android 9+/ARM64 и отсекает версии Minecraft до 1.21.80. Это требования upstream, **не** доказательство работоспособности Nevertime на всех версиях после 1.21.80.
 
+В snapshot preloader-android не найден отдельный LICENSE/COPYING/NOTICE через `git ls-files`; Apache-лицензию родительского лаунчера нельзя без проверки считать лицензией отдельного репозитория SDK. Перед переносом его кода требуется установить разрешение на использование.
+
 ### Почему не скопирован весь загрузчик
 
 В inspected snapshot присутствуют бинарные `app/src/main/jniLibs/arm64-v8a/libgxcore.so` и `libinbuiltmods.so`. `util/NativeBridgeHelper.kt` объявляет JNI `nativeLoadMinecraftRuntime`, `nativeScanImage`, `nativeRewriteImage`, а соответствующая реализация не найдена в просмотренном source tree. `util/NativeImageGuard.java` вызывает rewriteImage и заменяет извлечённый SO-файл; `GamePackageManager.kt` вызывает этот guard.
@@ -81,3 +83,12 @@ python -m unittest discover -s nevertime-android/tests -p 'test_*.py' -v
 ```
 
 Инструмент читает имена библиотек и ELF machine, SHA-256 и пути уведомлений. Не загружает SO, не извлекает файлы на диск, не проверяет подпись APK или лицензии и не определяет автоматически работоспособность bridge. Синтетические ZIP/ELF в unit tests — только fixtures парсера; в приложение не попадают.
+
+## Результат сборки этого изменения
+
+Commit исходников: `3cb95e1f2a77da8f19ce53c82d16a61a02ce39b9`.
+
+[GitHub Actions — success](https://github.com/funpaysell71-stack/Newpro/actions/runs/40258412068).
+[APK в ZIP-артефакте](https://github.com/funpaysell71-stack/Newpro/actions/runs/40258412068/artifacts/12623540677).
+
+Прошли компиляция APK/test APK, Lint, 4 теста инвентаризации, 11 проверок HudMath и 17 Android smoke assertions на API 35. Это проверки инструмента и прежнего лаунчера, не Minecraft. Исходники Android-приложения не менялись. Итоговый documentation-only commit не требует повторной компиляции.
