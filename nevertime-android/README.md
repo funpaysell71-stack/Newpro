@@ -18,7 +18,7 @@ Device verification remains required. No device test has been performed by the a
    Android will reject the update; preserve its settings before deciding to uninstall it.
 2. Enable Nevertime in LSPosed and select only com.mojang.minecraftpe.
 3. Fully stop Minecraft, then use Nevertime’s “Launch Minecraft” button. Let the main menu load, then return to Nevertime.
-4. Open “Проверка подключения”. Copy the report if it contains ERROR, a mismatch,
+4. Tap the NT logo, then open “Проверка подключения”. Copy the report if it contains ERROR, a mismatch,
    or the engine timeout. If no report arrives, copy the Nevertime lines in LSPosed's log.
 
 LIBRARY_MATCHED proves only the probe found a matching engine file in the game process.
@@ -36,3 +36,18 @@ The user identified the game as v26.50 from the menu screenshot. The binary's id
 The proprietary game library is not included. No function offsets or signatures have been
 validated. Native loading/IPC can fail on particular LSPosed or Android builds; failures
 must be diagnosed from the report before implementing gameplay adapters.
+
+## Reference visual transfer
+The launcher now follows the four user-supplied reference screenshots: grayscale
+landscape, NT monogram, green Play button, news cards and theme picker. The local
+HTML/SVG UI is packaged in the APK, has no network permission, and blocks WebView
+navigation and file/content access. Play delegates to the installed Minecraft app.
+Eight theme selections are persisted natively and shared with the existing clock HUD.
+Tap the NT logo to open connection diagnostics and HUD controls. Reference news text
+is reproduced as supplied design content; it does not establish gameplay availability.
+The Tools dialog explicitly states which features this build implements.
+
+The screenshots did not include the actual in-game module menu, so that menu is not
+recreated by this change. Browser UI checks exercise navigation, theme persistence,
+news scrolling, bridge calls and a small landscape viewport; they do not test Android
+WebView or LSPosed on a device.
