@@ -19,6 +19,7 @@ public class MainActivity extends Activity {
  button("Start HUD",v->{if(!Settings.canDrawOverlays(this)){status.setText("Allow overlay permission first");return;}startService(new Intent(this,OverlayService.class));status.setText("HUD enabled");});
  button("Stop HUD",v->{stopService(new Intent(this,OverlayService.class));status.setText("HUD disabled");});
  button("Launch Minecraft",v->{Intent i=getPackageManager().getLaunchIntentForPackage("com.mojang.minecraftpe");if(i!=null)startActivity(i);else status.setText("Minecraft Bedrock not found");});
+ button("Проверка подключения",v->startActivity(new Intent(this,dev.nevertime.client.bridge.BridgeActivity.class)));
  label("Drag HUD to move it. Tap to hide. Minecraft FPS and coordinates require game integration.",13,0xFF8394AB);
  }
 }

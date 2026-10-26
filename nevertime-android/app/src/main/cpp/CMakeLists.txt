@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(nevertime_bridge LANGUAGES CXX)
+add_library(nevertime_bridge SHARED bridge.cpp)
+target_compile_features(nevertime_bridge PRIVATE cxx_std_17)
+target_compile_options(nevertime_bridge PRIVATE -Wall -Wextra -Werror -fvisibility=hidden)
+target_link_libraries(nevertime_bridge PRIVATE dl)
+target_link_options(nevertime_bridge PRIVATE "-Wl,-z,max-page-size=16384")
