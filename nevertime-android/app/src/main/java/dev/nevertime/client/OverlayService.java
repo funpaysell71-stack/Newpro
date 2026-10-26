@@ -17,7 +17,7 @@ public class OverlayService extends Service {
  @Override public int onStartCommand(Intent i,int flags,int id){
   if(panel!=null)return START_STICKY;
   if(!android.provider.Settings.canDrawOverlays(this)){stopSelf();return START_NOT_STICKY;}
-  wm=(WindowManager)getSystemService(WINDOW_SERVICE);panel=new LinearLayout(this);panel.setOrientation(1);panel.setPadding(26,20,26,20);
+  wm=(WindowManager)getSystemService(WINDOW_SERVICE);panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(26,20,26,20);
   GradientDrawable d=new GradientDrawable();d.setColor(0xE9111B2E);d.setCornerRadius(22);d.setStroke(2,0xFF6DE5FC);panel.setBackground(d);
   TextView title=new TextView(this);title.setText("◆ NEVERTIME");title.setTextColor(0xFF6DE5FC);title.setTextSize(17);panel.addView(title);
   clock=new TextView(this);clock.setTextColor(-1);clock.setTextSize(14);panel.addView(clock);

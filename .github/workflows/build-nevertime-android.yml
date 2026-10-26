@@ -28,7 +28,13 @@ jobs:
         run: sdkmanager "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0"
       - name: Build APK
         working-directory: nevertime-android
-        run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
+        run: |
+          if ! gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug :app:lintDebug; then
+            if [ -f app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt ]; then
+              cat app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt
+            fi
+            exit 1
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: Nevertime-Client-APK
