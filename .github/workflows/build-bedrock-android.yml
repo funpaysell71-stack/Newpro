@@ -16,10 +16,11 @@ jobs:
         run: |
           python -m json.tool bedrock-android/behavior_pack/manifest.json >/dev/null
           node --check bedrock-android/behavior_pack/scripts/main.js
+          node --test bedrock-android/tests/*.test.js
           cd bedrock-android/behavior_pack
-          zip -r "$GITHUB_WORKSPACE/NOVA-Bedrock-Android.mcpack" manifest.json scripts
-          test -s "$GITHUB_WORKSPACE/NOVA-Bedrock-Android.mcpack"
+          zip -r "$GITHUB_WORKSPACE/Nevertime-Bedrock-Android.mcpack" manifest.json scripts
+          test -s "$GITHUB_WORKSPACE/Nevertime-Bedrock-Android.mcpack"
       - uses: actions/upload-artifact@v4
         with:
-          name: NOVA-Bedrock-Android
-          path: NOVA-Bedrock-Android.mcpack
+          name: Nevertime-Bedrock-Android
+          path: Nevertime-Bedrock-Android.mcpack

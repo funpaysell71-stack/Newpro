@@ -1,27 +1,20 @@
-# NOVA Bedrock — Android utility add-on
+# Nevertime World HUD
 
-An **independent** Flarial-inspired in-game utility menu for Minecraft Bedrock Android. Not an official Flarial client, not an APK, and not a native injected overlay.
+Отдельный behavior pack для Minecraft Bedrock. Имя прежнего прототипа NOVA заменено на Nevertime. Не изменяет APK Minecraft.
 
-## Target
-- Target game: Minecraft Bedrock Android **26.52**.
-- Uses stable `@minecraft/server` 2.0.0 and `@minecraft/server-ui` 2.0.0.
-- Minimum declared engine: 1.21.90. Actual compatibility on 26.52 **requires device testing**.
+Модули: координаты, направление, измерение, часы мира, горизонтальная скорость в блоках за игровой тик. Все опции сохраняются для каждого игрока в этом мире; HUD можно выключить полностью. Чтение/обновление каждые 10 игровых тиков.
 
-## Features
-- Compass opens the in-game menu.
-- Alternative command: `/scriptevent nova:menu`.
-- Toggle coordinates, world time, horizontal movement speed in the action bar.
-- Toggle night vision and decorative particles.
-- No root, no patched APK, no account credentials.
-- Settings persist for the current game session only.
+Стабильные зависимости `@minecraft/server: 2.0.0`, `@minecraft/server-ui: 2.0.0`; минимальный engine 1.21.90. Цель проверки — Bedrock 26.52. Реальный запуск в Minecraft пока не подтверждён. Используемый Android app только сохраняет файл; дополнение активируется отдельно в мире.
 
-## Build / install on Android
-1. Download the repo ZIP from GitHub or run the `Build Bedrock Android pack` GitHub Action.
-2. From the `bedrock-android/behavior_pack` directory, ZIP the **contents** (manifest.json and scripts directory, not the enclosing behavior_pack directory).
-3. Rename the ZIP to `NOVA-Bedrock-Android.mcpack`.
-4. Open the .mcpack file with Minecraft on Android.
-5. Enable the imported behavior pack in the world's Behavior Packs settings.
-6. Enter the world and use a compass, or type `/scriptevent nova:menu`.
+Откройте `.mcpack` через Minecraft и включите набор поведения в своём мире. Меню: `/scriptevent nevertime:menu` от имени игрока с разрешением на эту команду, либо использование компаса (событие на мобильном управлении требует проверки). Закройте чат перед формой. На чужом сервере без набора это не работает. Строка action bar может конфликтовать с другими наборами.
 
-## Limitations
-Bedrock's official add-on API cannot reproduce native Flarial features such as injected ClickGUI, FPS hooks, or rendering overlays. HUD is implemented using Minecraft's action bar; settings are session-local. Multiplayer server policies may restrict add-ons.
+Прежние night vision и случайные частицы убраны: версия 0.2 сосредоточена на информационном HUD и не вмешивается в эффекты игрока. Скорость больше не называется блоками в секунду при предположении о TPS. Настройки хранятся в `nevertime:preferences_v1`; UUID набора сохранены, версия поднята до 1.1.0.
+
+```bash
+node --test tests/*.test.js
+node --check behavior_pack/scripts/main.js
+cd behavior_pack
+zip -r ../Nevertime-Bedrock.mcpack manifest.json scripts
+```
+
+Android Gradle task `:app:packageAddon` автоматически собирает этот же пакет в APK. Полная инструкция — [nevertime-android/README.md](../nevertime-android/README.md).
