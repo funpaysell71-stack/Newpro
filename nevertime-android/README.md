@@ -17,7 +17,7 @@ Device verification remains required. No device test has been performed by the a
 1. Install the debug APK. If an existing installation uses a different signing key,
    Android will reject the update; preserve its settings before deciding to uninstall it.
 2. Enable Nevertime in LSPosed and select only com.mojang.minecraftpe.
-3. Fully restart Minecraft, let the main menu load, then return to Nevertime.
+3. Fully stop Minecraft, then use Nevertime’s “Launch Minecraft” button. Let the main menu load, then return to Nevertime.
 4. Open “Проверка подключения”. Copy the report if it contains ERROR, a mismatch,
    or the engine timeout. If no report arrives, copy the Nevertime lines in LSPosed's log.
 
