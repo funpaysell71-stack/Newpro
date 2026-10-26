@@ -5,8 +5,9 @@ android {
  ndkVersion = "27.2.12479018"
  defaultConfig {
   applicationId = "dev.nevertime.client"
-  minSdk = 32; targetSdk = 34; versionCode = 3; versionName = "1.0-visual-probe"
-  ndk { abiFilters += "arm64-v8a" }
+  minSdk = 32; targetSdk = 34; versionCode = 4; versionName = "1.0.1-startup-fix"
+  // x86_64 permits cold-start verification in the Android emulator.
+  ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
   externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
  }
  externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }

@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.webkit.*;
 import android.widget.Toast;
 import java.io.ByteArrayOutputStream;
@@ -21,7 +22,6 @@ public class MainActivity extends Activity {
         super.onCreate(saved);
         getWindow().setNavigationBarColor(0xFF000000);
         getWindow().setNavigationBarContrastEnforced(false);
-        getWindow().getInsetsController().hide(WindowInsets.Type.statusBars());
         web = new WebView(this);
         web.setBackgroundColor(0xFF141414);
         WebSettings settings = web.getSettings();
@@ -45,6 +45,8 @@ public class MainActivity extends Activity {
             }
         });
         setContentView(web);
+        // The window's decor/controller is not available before content is attached.
+        web.post(this::hideStatusBar);
         try (InputStream in = getAssets().open("ui/index.html"); ByteArrayOutputStream bytes = new ByteArrayOutputStream()) {
             byte[] buffer = new byte[8192]; int count;
             while ((count = in.read(buffer)) != -1) bytes.write(buffer,0,count);
@@ -67,8 +69,18 @@ public class MainActivity extends Activity {
         }); }
         @JavascriptInterface public void hideHud() { runOnUiThread(() -> { stopService(new Intent(MainActivity.this,OverlayService.class)); message("HUD скрыт."); }); }
     }
-    private void message(String text) { web.evaluateJavascript("window.NevertimeUI.toast(" + JSONObject.quote(text) + ")",null); }
+    private void hideStatusBar() {
+        if (web == null || !web.isAttachedToWindow()) return;
+        WindowInsetsController controller = web.getWindowInsetsController();
+        if (controller != null) controller.hide(WindowInsets.Type.statusBars());
+    }
+    @Override public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) hideStatusBar();
+    }
+    private void message(String text) { if(web != null && !isDestroyed()) web.evaluateJavascript("window.NevertimeUI.toast(" + JSONObject.quote(text) + ")",null); }
     @Override public void onBackPressed() {
+        if (web == null) { finish(); return; }
         web.evaluateJavascript("window.NevertimeUI ? window.NevertimeUI.close() : false", result -> {
             if (!"true".equals(result)) finish();
         });
