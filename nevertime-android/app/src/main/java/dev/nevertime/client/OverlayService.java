@@ -11,13 +11,16 @@ import android.widget.*;
 import java.util.*;
 import java.text.*;
 public class OverlayService extends Service {
+ android.content.SharedPreferences themePrefs;
+ final android.content.SharedPreferences.OnSharedPreferenceChangeListener themeListener=(prefs,key)->applyTheme();
+ void applyTheme(){if(panel!=null){int color=ThemePalette.accent(this);GradientDrawable d=new GradientDrawable();d.setColor(0xEB1B1B1F);d.setCornerRadius(22);d.setStroke(2,color);panel.setBackground(d);if(panel.getChildCount()>0)((TextView)panel.getChildAt(0)).setTextColor(color);}}
  WindowManager wm;LinearLayout panel;WindowManager.LayoutParams params;TextView clock;
  Handler handler=new Handler(Looper.getMainLooper());
  Runnable tick=new Runnable(){public void run(){if(clock!=null)clock.setText("TIME  "+new SimpleDateFormat("HH:mm:ss",Locale.getDefault()).format(new Date()));handler.postDelayed(this,1000);}};
  @Override public int onStartCommand(Intent i,int flags,int id){
   if(panel!=null)return START_STICKY;
   if(!android.provider.Settings.canDrawOverlays(this)){stopSelf();return START_NOT_STICKY;}
-  wm=(WindowManager)getSystemService(WINDOW_SERVICE);panel=new LinearLayout(this);panel.setOrientation(1);panel.setPadding(26,20,26,20);
+  wm=(WindowManager)getSystemService(WINDOW_SERVICE);panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(26,20,26,20);
   GradientDrawable d=new GradientDrawable();d.setColor(0xE9111B2E);d.setCornerRadius(22);d.setStroke(2,0xFF6DE5FC);panel.setBackground(d);
   TextView title=new TextView(this);title.setText("◆ NEVERTIME");title.setTextColor(0xFF6DE5FC);title.setTextSize(17);panel.addView(title);
   clock=new TextView(this);clock.setTextColor(-1);clock.setTextSize(14);panel.addView(clock);
@@ -29,8 +32,9 @@ public class OverlayService extends Service {
    case MotionEvent.ACTION_MOVE:if(Math.abs(e.getRawX()-x)+Math.abs(e.getRawY()-y)>12)moved=true;params.x=ox+(int)(e.getRawX()-x);params.y=oy+(int)(e.getRawY()-y);wm.updateViewLayout(panel,params);return true;
    case MotionEvent.ACTION_UP:if(!moved)stopSelf();return true;
   }return false;}});
+  themePrefs=getSharedPreferences(ThemePalette.PREFS,MODE_PRIVATE);themePrefs.registerOnSharedPreferenceChangeListener(themeListener);applyTheme();
   wm.addView(panel,params);handler.post(tick);return START_STICKY;
  }
- @Override public void onDestroy(){handler.removeCallbacks(tick);if(wm!=null&&panel!=null){try{wm.removeView(panel);}catch(Exception ignored){}}panel=null;clock=null;super.onDestroy();}
+ @Override public void onDestroy(){handler.removeCallbacks(tick);if(themePrefs!=null)themePrefs.unregisterOnSharedPreferenceChangeListener(themeListener);if(wm!=null&&panel!=null){try{wm.removeView(panel);}catch(Exception ignored){}}panel=null;clock=null;super.onDestroy();}
  @Override public IBinder onBind(Intent i){return null;}
 }

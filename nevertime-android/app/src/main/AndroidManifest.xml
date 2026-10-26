@@ -2,8 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
  <queries><package android:name="com.mojang.minecraftpe"/></queries>
- <application android:label="Nevertime Client" android:theme="@android:style/Theme.Material.NoActionBar">
-  <activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+ <application android:label="Nevertime Client" android:allowBackup="false" android:theme="@android:style/Theme.Material.NoActionBar">
+  <meta-data android:name="xposedmodule" android:value="true"/>
+  <meta-data android:name="xposeddescription" android:value="Minecraft ARM64 connection probe. Gameplay modules are not implemented."/>
+  <meta-data android:name="xposedminversion" android:value="82"/>
+  <meta-data android:name="xposedscope" android:resource="@array/xposed_scope"/>
+  <provider android:name=".bridge.BridgeProvider" android:authorities="dev.nevertime.client.bridge" android:exported="true"/>
+  <activity android:name=".bridge.BridgeActivity" android:exported="false"/>
+  <activity android:name=".MainActivity" android:screenOrientation="sensorLandscape" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
   <service android:name=".OverlayService" android:exported="false"/>
  </application>
 </manifest>
