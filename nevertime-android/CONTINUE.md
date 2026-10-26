@@ -1,3 +1,5 @@
+> Updated investigation: [docs/GAME_BRIDGE_AUDIT.md](docs/GAME_BRIDGE_AUDIT.md). The earlier audit was incomplete: LeviLaunchroid provides a real in-process hosting architecture, but compatibility/compliance and live coordinates are not verified.
+
 # Continue Nevertime 5.0
 
 Implemented: premium adaptive launcher, original vector N/splash, stock PLAY, version/catalog manager, independent N ClickGUI, device HUD editor with locked default, grid/scale/color/opacity/profiles, performance polling modes. Removed add-on generation and APK asset export. Kept legacy bedrock source unused.

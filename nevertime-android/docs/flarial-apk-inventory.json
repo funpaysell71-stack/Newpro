@@ -1,0 +1,138 @@
+{
+  "file": "Flarial 1.4.17.zip",
+  "sha256": "f27a1d848c71eba07dd61189d26568913018c532bd3d8d4f37cbd78902e69b06",
+  "apks": [
+    {
+      "apk": "base.apk",
+      "has_manifest": true,
+      "libraries": [],
+      "license_notice_paths": [
+        "assets/licenses/LeviLaunchroid-LICENSE.txt",
+        "assets/licenses/LeviLaunchroid-NOTICE.txt",
+        "assets/licenses/Space-Grotesk-OFL.txt",
+        "assets/licenses/fidelityfx-fsr.txt",
+        "assets/licenses/msa-auth-for-java-LICENSE.txt"
+      ]
+    },
+    {
+      "apk": "split_config.arm64_v8a.apk",
+      "has_manifest": true,
+      "libraries": [
+        {
+          "path": "lib/arm64-v8a/libPlayFabMultiplayer.so",
+          "bytes": 3839688,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libandroidx.graphics.path.so",
+          "bytes": 10096,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libapminsighta.so",
+          "bytes": 102256,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libapminsightb.so",
+          "bytes": 124352,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libapplovin-native-crash-reporter.so",
+          "bytes": 843152,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libbuffer_pgl.so",
+          "bytes": 9000,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libconscrypt_jni.so",
+          "bytes": 2868664,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libcrashlytics-common.so",
+          "bytes": 864616,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libcrashlytics-handler.so",
+          "bytes": 222056,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libcrashlytics-trampoline.so",
+          "bytes": 4744,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libcrashlytics.so",
+          "bytes": 231960,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libdatastore_shared_counter.so",
+          "bytes": 7112,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libfile_lock_pgl.so",
+          "bytes": 6312,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libflarialclient.so",
+          "bytes": 11917448,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libmaesdk.so",
+          "bytes": 6113976,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libnms.so",
+          "bytes": 317336,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libpglarmor.so",
+          "bytes": 68776,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libshin.so",
+          "bytes": 227608,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libtt_ugen_layout.so",
+          "bytes": 440672,
+          "elf_machine": "AArch64"
+        },
+        {
+          "path": "lib/arm64-v8a/libunitycoherencenative.so",
+          "bytes": 493112,
+          "elf_machine": "AArch64"
+        }
+      ],
+      "license_notice_paths": []
+    },
+    {
+      "apk": "split_config.ru.apk",
+      "has_manifest": true,
+      "libraries": [],
+      "license_notice_paths": []
+    },
+    {
+      "apk": "split_config.xhdpi.apk",
+      "has_manifest": true,
+      "libraries": [],
+      "license_notice_paths": []
+    }
+  ],
+  "limitations": "Inventory only. Does not verify signatures, licenses, player access, compatibility or runtime behavior."
+}

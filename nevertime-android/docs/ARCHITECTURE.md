@@ -1,3 +1,5 @@
+> Updated investigation: [GAME_BRIDGE_AUDIT.md](GAME_BRIDGE_AUDIT.md). The earlier audit was incomplete: LeviLaunchroid provides a real in-process hosting architecture, but compatibility/compliance and live coordinates are not verified.
+
 # Architecture audit — 5.0
 
 Inspected public upstream source, not assumptions from promotional UI:

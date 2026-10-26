@@ -28,6 +28,7 @@ jobs:
       - name: Regression tests
         run: |
           bash nevertime-android/tests/run.sh
+          python -m unittest discover -s nevertime-android/tests -p 'test_*.py' -v
           python -m json.tool nevertime-android/app/src/main/assets/compatibility.json >/dev/null
       - name: Compile, lint and package
         working-directory: nevertime-android
